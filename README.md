@@ -90,27 +90,17 @@ HangInThereApp
 
 ## Screenshots
 
-Recommended screenshots to keep in the project:
-
-1. Splash screen
-2. Category selection screen
-3. Difficulty selection screen
-4. Gameplay screen
-5. Win / loss summary screen
-
-Suggested location for assets:
-
-- `docs/screenshots/`
-
-Example markdown once images are added:
-
-```md
+### Splash
 ![Splash](docs/screenshots/splash.png)
+
+### Category Selection
 ![Category Selection](docs/screenshots/category-selection.png)
+
+### Difficulty Selection
 ![Difficulty Selection](docs/screenshots/difficulty-selection.png)
+
+### Gameplay
 ![Gameplay](docs/screenshots/gameplay.png)
-![Summary](docs/screenshots/summary.png)
-```
 
 ## Testing
 

@@ -51,7 +51,12 @@ The project is already structured to support growth beyond a small prototype.
   - `won` when all letters are revealed
   - `lost` when mistakes reach the maximum
 - Winning grants XP.
-- Leveling up grants additional power-up charges.
+- The player starts with no power charges.
+- Reaching level 3 unlocks 1 `Reveal Letter` and 1 `Free Guess`.
+- Later milestone levels grant capped refills:
+  - mostly `Free Guess`
+  - `Reveal Letter` only on bigger milestones
+  - both powers capped at 2 stored charges
 
 ## Difficulty System
 
@@ -177,7 +182,7 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
 - `GameLevel`
   - difficulty mode metadata
 - `PlayerProgress`
-  - level, experience, and power-up charges
+  - level, experience, level-threshold progression, and capped power-up charge rewards
 - `HangmanPuzzle`
   - current round state and game rules
 - `StartRoundUseCase`

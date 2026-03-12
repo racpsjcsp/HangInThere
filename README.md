@@ -18,7 +18,7 @@ For the full internal project documentation, see [`PROJECT_OVERVIEW.md`](./PROJE
 - 100 items per category
 - hint-based gameplay
 - XP and player level progression
-- power-ups:
+- power-ups with milestone-based unlocks and capped refills:
   - Reveal Letter
   - Free Guess
 - persistent local progress with `UserDefaults`

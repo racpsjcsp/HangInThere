@@ -92,4 +92,51 @@ struct AppViewModelTests {
         #expect(level == .easy)
         #expect(puzzle?.category == .animals)
     }
+
+    @Test func goToCategoriesFromLevelSelectionClearsSelectedCategoryAndLevel() async throws {
+        let viewModel = await MainActor.run {
+            AppViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Flow", hint: "Back", difficulty: 1)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.hard)
+            viewModel.goToCategories()
+        }
+
+        let phase = await MainActor.run { viewModel.phase }
+        let category = await MainActor.run { viewModel.gameViewModel.currentCategory }
+        let level = await MainActor.run { viewModel.gameViewModel.currentLevel }
+
+        #expect(phase == .categorySelection)
+        #expect(category == nil)
+        #expect(level == nil)
+    }
+
+    @Test func continueAfterRoundKeepsSelectedDifficulty() async throws {
+        let firstWord = HangmanWord(answer: "Caracal", hint: "First", difficulty: 2)
+        let viewModel = await MainActor.run {
+            AppViewModel(
+                wordRepository: StubWordRepository(word: firstWord),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.medium)
+            viewModel.continueAfterRound()
+        }
+
+        let phase = await MainActor.run { viewModel.phase }
+        let level = await MainActor.run { viewModel.gameViewModel.currentLevel }
+        let puzzle = await MainActor.run { viewModel.gameViewModel.puzzle }
+
+        #expect(phase == .game)
+        #expect(level == .medium)
+        #expect(puzzle?.category == .animals)
+    }
 }

@@ -52,6 +52,8 @@ struct GameScreenView: View {
             Image(systemName: state.gameLevelSymbol)
             Text(state.gameLevelTitle)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(state.gameLevelTitle)
         .font(AppTheme.Typography.caption())
         .foregroundStyle(Color.black.opacity(0.78))
         .padding(.horizontal, AppTheme.Spacing.xSmall)

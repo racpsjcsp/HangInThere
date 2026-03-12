@@ -66,4 +66,63 @@ struct HangmanGameViewModelTests {
         #expect(repository.storedProgress == progress)
         #expect(repository.storedProgress.experience > 0)
     }
+
+    @Test func selectCategoryBuildsLevelSelectionState() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Level", hint: "Mode", difficulty: 2)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.selectCategory(.geography)
+        }
+
+        let state = await MainActor.run { viewModel.levelSelectionViewState }
+
+        #expect(state?.categoryTitle == Strings.Category.geographyTitle)
+        #expect(state?.levels.count == GameLevel.allCases.count)
+        #expect(state?.levels.map(\.level) == GameLevel.allCases)
+    }
+
+    @Test func startRoundPublishesSelectedLevelInGameViewState() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Caracal", hint: "Wild cat", difficulty: 2)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .hard)
+        }
+
+        let level = await MainActor.run { viewModel.currentLevel }
+        let state = await MainActor.run { viewModel.gameViewState }
+
+        #expect(level == .hard)
+        #expect(state?.gameLevelTitle == Strings.Mode.hardTitle)
+        #expect(state?.gameLevelSymbol == GameLevel.hard.symbol)
+    }
+
+    @Test func showCategorySelectionClearsSelectedDifficulty() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Caracal", hint: "Wild cat", difficulty: 2)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .medium)
+            viewModel.showCategorySelection(message: Strings.Message.switchCategories)
+        }
+
+        let level = await MainActor.run { viewModel.currentLevel }
+        let puzzle = await MainActor.run { viewModel.puzzle }
+
+        #expect(level == nil)
+        #expect(puzzle == nil)
+    }
 }

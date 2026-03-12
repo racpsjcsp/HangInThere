@@ -19,6 +19,30 @@ struct GameplayUseCaseTests {
         #expect(puzzle.word == expectedWord)
     }
 
+    @Test func startRoundUsesSelectedLevelWordPool() async throws {
+        let easyWord = HangmanWord(answer: "Fox", hint: "Easy animal", difficulty: 1)
+        let mediumWord = HangmanWord(answer: "Caracal", hint: "Medium animal", difficulty: 2)
+        let hardWord = HangmanWord(answer: "Cassowary", hint: "Hard animal", difficulty: 3)
+        let repository = InMemoryWordRepository(
+            wordsByCategoryAndLevel: [
+                .animals: [
+                    .easy: [easyWord],
+                    .medium: [mediumWord],
+                    .hard: [hardWord]
+                ]
+            ]
+        )
+        let useCase = StartRoundUseCase(wordRepository: repository)
+
+        let easyPuzzle = useCase.execute(category: .animals, level: .easy)
+        let mediumPuzzle = useCase.execute(category: .animals, level: .medium)
+        let hardPuzzle = useCase.execute(category: .animals, level: .hard)
+
+        #expect(easyPuzzle.word == easyWord)
+        #expect(mediumPuzzle.word == mediumWord)
+        #expect(hardPuzzle.word == hardWord)
+    }
+
     @Test func resolveRoundStateAwardsExperienceForWins() async throws {
         let puzzle = HangmanPuzzle(
             category: .animals,

@@ -288,6 +288,39 @@ The UI tests cover:
 
 UI tests use a deterministic word source so they remain stable.
 
+### UI testing notes
+
+- UI tests in this project use `XCTest`, not `Testing`, because app-launch, tap, wait, and accessibility-tree APIs come from `XCTest`.
+- Unit and domain tests can use `Testing`, because they instantiate and verify logic directly without launching the app.
+- Accessibility identifiers are the main testing contract between the SwiftUI screens and the UI test target.
+
+### SwiftUI accessibility lesson learned
+
+One concrete issue appeared while testing the game difficulty badge:
+
+- the badge had the identifier `game.modeBadge`
+- the UI test originally searched for it with `app.otherElements["game.modeBadge"]`
+- that failed even though the identifier existed
+
+Why it failed:
+
+- SwiftUI accessibility trees do not always expose custom composed views under the exact XCTest element bucket you expect
+- a view built from `HStack`, `Image`, `Text`, and modifiers may not reliably appear as an `otherElement`
+
+How it was fixed:
+
+- the badge view was made into a single accessibility node using:
+  - `.accessibilityElement(children: .ignore)`
+  - `.accessibilityLabel(...)`
+- the UI test was changed to search the full accessibility tree with:
+  - `app.descendants(matching: .any)["game.modeBadge"]`
+
+Practical rule for this project:
+
+- use `app.buttons[...]` for real buttons
+- use `app.staticTexts[...]` for plain text when stable
+- use `app.descendants(matching: .any)[...]` for custom SwiftUI-composed views such as pills, badges, cards, and containers
+
 ## Scalability Notes
 
 The current structure is suitable for expanding the app further.

@@ -105,6 +105,7 @@ HangInThereApp
 - Unit tests cover app flow, domain logic, and view models.
 - UI tests cover the main playable flow.
 - UI tests run with deterministic data for stability.
+- SwiftUI accessibility can expose custom composed views under different element types, so UI tests prefer stable accessibility identifiers and, when needed, `descendants(matching: .any)` instead of assuming `buttons`, `staticTexts`, or `otherElements`.
 
 ## Future Direction
 

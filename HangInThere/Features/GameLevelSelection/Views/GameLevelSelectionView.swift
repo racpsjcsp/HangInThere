@@ -23,6 +23,7 @@ struct GameLevelSelectionView: View {
                         title: state.backButtonTitle,
                         systemImage: "arrow.left.circle",
                         style: .ghost,
+                        layout: .horizontal,
                         accessibilityIdentifier: AccessibilityID.LevelSelection.backButton,
                         action: onGoBack
                     )

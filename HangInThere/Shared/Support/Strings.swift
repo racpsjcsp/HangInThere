@@ -50,7 +50,7 @@ enum Strings {
         static let subtitle = "A polished Hangman challenge with categories, level progression, and small power boosts when you need them most."
         static let featuresTitle = "Game Features"
         static let categoriesFeature = "Four categories: animals, geography, foods, and objects"
-        static let progressionFeature = "Level up with XP and gain more power-up charges"
+        static let progressionFeature = "Reach level 3 to unlock powers, then earn capped milestone refills as you climb"
         static let powersFeature = "Use Reveal Letter and Free Guess for tight rounds"
         static let start = "Start Playing"
     }

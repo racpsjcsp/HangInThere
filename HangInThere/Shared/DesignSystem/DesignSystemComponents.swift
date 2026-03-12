@@ -33,29 +33,26 @@ struct AppButton: View {
         case ghost
     }
 
+    enum Layout {
+        case horizontal
+        case vertical
+    }
+
     let title: String
     let systemImage: String?
     let style: Style
+    let layout: Layout
     let accessibilityIdentifier: String?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: AppTheme.Spacing.xxSmall) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .frame(width: 12)
-                }
-
-                Text(title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.9)
-            }
+            content
             .font(AppTheme.Typography.body())
             .foregroundStyle(foregroundColor)
             .frame(maxWidth: .infinity)
             .padding(.vertical, AppTheme.Spacing.small)
-            .padding(.horizontal, AppTheme.Spacing.small)
+            .padding(.horizontal, horizontalPadding)
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
             .overlay {
@@ -65,6 +62,48 @@ struct AppButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(accessibilityIdentifier ?? title)
+    }
+
+    private var content: some View {
+        Group {
+            switch layout {
+            case .horizontal:
+                HStack(spacing: AppTheme.Spacing.xSmall) {
+                    icon
+                    label
+                }
+
+            case .vertical:
+                VStack(spacing: AppTheme.Spacing.xxxSmall) {
+                    icon
+                    label
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        if let systemImage {
+            Image(systemName: systemImage)
+                .frame(width: layout == .horizontal ? 14 : nil)
+        }
+    }
+
+    private var label: some View {
+        Text(title)
+            .lineLimit(layout == .horizontal ? 1 : 2)
+            .multilineTextAlignment(.center)
+            .minimumScaleFactor(layout == .horizontal ? 0.75 : 0.9)
+    }
+
+    private var horizontalPadding: CGFloat {
+        switch layout {
+        case .horizontal:
+            return AppTheme.Spacing.small
+        case .vertical:
+            return AppTheme.Spacing.small
+        }
     }
 
     private var background: AnyShapeStyle {

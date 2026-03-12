@@ -29,11 +29,21 @@ struct ProgressionUseCaseTests {
     @Test func awardProgressReturnsUpdatedProgressAndLevelsGained() async throws {
         let progress = PlayerProgress()
 
-        let result = AwardProgressUseCase().execute(progress: progress, reward: 140)
+        let result = AwardProgressUseCase().execute(progress: progress, reward: 200)
 
-        #expect(result.levelsGained == 1)
-        #expect(result.progress.level == 2)
-        #expect(result.progress.revealLetterCharges == 3)
-        #expect(result.progress.freeGuessCharges == 2)
+        #expect(result.levelsGained == 2)
+        #expect(result.progress.level == 3)
+        #expect(result.progress.revealLetterCharges == 1)
+        #expect(result.progress.freeGuessCharges == 1)
+    }
+
+    @Test func awardProgressAppliesMilestoneRewardsWithCaps() async throws {
+        let progress = PlayerProgress()
+
+        let result = AwardProgressUseCase().execute(progress: progress, reward: 1_760)
+
+        #expect(result.progress.level >= 9)
+        #expect(result.progress.revealLetterCharges == PlayerProgress.maxPowerCharges)
+        #expect(result.progress.freeGuessCharges == PlayerProgress.maxPowerCharges)
     }
 }

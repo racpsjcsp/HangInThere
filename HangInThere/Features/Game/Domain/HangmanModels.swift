@@ -134,10 +134,13 @@ enum GameLevel: String, CaseIterable, Identifiable {
 }
 
 struct PlayerProgress: Equatable, Codable {
+    static let powerUnlockLevel = 3
+    static let maxPowerCharges = 2
+
     var level: Int = 1
     var experience: Int = 0
-    var revealLetterCharges: Int = 2
-    var freeGuessCharges: Int = 1
+    var revealLetterCharges: Int = 0
+    var freeGuessCharges: Int = 0
 
     var progressToNextLevel: Double {
         Double(experienceWithinCurrentLevel) / Double(experienceRequiredForCurrentLevel)
@@ -157,11 +160,33 @@ struct PlayerProgress: Equatable, Codable {
 
         while experience >= Self.experienceRequired(before: level + 1) {
             level += 1
-            revealLetterCharges += 1
-            freeGuessCharges += 1
+        }
+
+        if level > previousLevel {
+            applyPowerRewards(from: previousLevel + 1, through: level)
         }
 
         return level - previousLevel
+    }
+
+    private mutating func applyPowerRewards(from startLevel: Int, through endLevel: Int) {
+        guard startLevel <= endLevel else { return }
+
+        for reachedLevel in startLevel...endLevel {
+            if reachedLevel == Self.powerUnlockLevel {
+                revealLetterCharges = min(revealLetterCharges + 1, Self.maxPowerCharges)
+                freeGuessCharges = min(freeGuessCharges + 1, Self.maxPowerCharges)
+                continue
+            }
+
+            if reachedLevel > Self.powerUnlockLevel, (reachedLevel - Self.powerUnlockLevel) % 3 == 0 {
+                freeGuessCharges = min(freeGuessCharges + 1, Self.maxPowerCharges)
+            }
+
+            if reachedLevel > Self.powerUnlockLevel, (reachedLevel - Self.powerUnlockLevel) % 6 == 0 {
+                revealLetterCharges = min(revealLetterCharges + 1, Self.maxPowerCharges)
+            }
+        }
     }
 
     static func experienceRequired(for level: Int) -> Int {

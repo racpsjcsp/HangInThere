@@ -46,6 +46,7 @@ struct SplashScreenView: View {
                 title: Strings.Splash.start,
                 systemImage: Strings.Symbol.startButton,
                 style: .primary,
+                layout: .horizontal,
                 accessibilityIdentifier: AccessibilityID.Splash.startButton,
                 action: onStart
             )

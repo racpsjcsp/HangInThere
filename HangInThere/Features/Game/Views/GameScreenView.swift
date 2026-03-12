@@ -31,19 +31,22 @@ struct GameScreenView: View {
     }
 
     private func topBar(state: GameViewState) -> some View {
-        HStack(spacing: AppTheme.Spacing.small) {
+        HStack(spacing: AppTheme.Spacing.xSmall) {
             AppPill(text: state.categoryTitle, color: state.categoryTint)
                 .accessibilityIdentifier(AccessibilityID.Game.categoryTitle)
+                .fixedSize(horizontal: true, vertical: false)
             difficultyBadge(state: state)
             Spacer()
             AppButton(
                 title: state.categoriesButtonTitle,
                 systemImage: Strings.Symbol.categoriesButton,
                 style: .ghost,
+                layout: .horizontal,
                 accessibilityIdentifier: AccessibilityID.Game.categoriesButton,
                 action: onGoToCategories
-            )
-            .frame(maxWidth: 150)
+                )
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
         }
     }
 
@@ -51,15 +54,18 @@ struct GameScreenView: View {
         HStack(spacing: AppTheme.Spacing.xxxSmall) {
             Image(systemName: state.gameLevelSymbol)
             Text(state.gameLevelTitle)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(state.gameLevelTitle)
         .font(AppTheme.Typography.caption())
         .foregroundStyle(Color.black.opacity(0.78))
-        .padding(.horizontal, AppTheme.Spacing.xSmall)
+        .padding(.horizontal, AppTheme.Spacing.xxSmall)
         .padding(.vertical, AppTheme.Spacing.xxSmall)
         .background(state.gameLevelTint, in: Capsule())
         .accessibilityIdentifier(AccessibilityID.Game.modeBadge)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private func puzzleCard(state: GameViewState) -> some View {
@@ -121,6 +127,7 @@ struct GameScreenView: View {
                         title: state.revealButtonTitle,
                         systemImage: state.revealButtonSymbol,
                         style: .secondary,
+                        layout: .vertical,
                         accessibilityIdentifier: AccessibilityID.Game.revealButton
                     ) {
                         viewModel.usePower(.revealLetter)
@@ -130,6 +137,7 @@ struct GameScreenView: View {
                         title: state.freeGuessButtonTitle,
                         systemImage: state.freeGuessButtonSymbol,
                         style: .ghost,
+                        layout: .vertical,
                         accessibilityIdentifier: AccessibilityID.Game.freeGuessButton
                     ) {
                         viewModel.usePower(.freeGuess)
@@ -185,6 +193,7 @@ struct GameScreenView: View {
                         title: Strings.Game.nextRound,
                         systemImage: Strings.Symbol.nextRoundButton,
                         style: .primary,
+                        layout: .horizontal,
                         accessibilityIdentifier: AccessibilityID.Game.nextRoundButton,
                         action: onContinueAfterRound
                     )
@@ -193,6 +202,7 @@ struct GameScreenView: View {
                         title: Strings.Game.changeCategory,
                         systemImage: Strings.Symbol.changeCategoryButton,
                         style: .ghost,
+                        layout: .horizontal,
                         accessibilityIdentifier: AccessibilityID.Game.changeCategoryButton,
                         action: onGoToCategories
                     )

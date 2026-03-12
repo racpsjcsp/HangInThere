@@ -90,17 +90,15 @@ HangInThereApp
 
 ## Screenshots
 
-### Splash
-<img src="docs/screenshots/splash.png" alt="Splash" width="300">
+<p align="center">
+  <img src="docs/screenshots/splash.png" alt="Splash" width="220">
+  <img src="docs/screenshots/category-selection.png" alt="Category Selection" width="220">
+</p>
 
-### Category Selection
-<img src="docs/screenshots/category-selection.png" alt="Category Selection" width="300">
-
-### Difficulty Selection
-<img src="docs/screenshots/difficulty-selection.png" alt="Difficulty Selection" width="300">
-
-### Gameplay
-<img src="docs/screenshots/gameplay.png" alt="Gameplay" width="300">
+<p align="center">
+  <img src="docs/screenshots/difficulty-selection.png" alt="Difficulty Selection" width="220">
+  <img src="docs/screenshots/gameplay.png" alt="Gameplay" width="220">
+</p>
 
 ## Testing
 

@@ -27,6 +27,8 @@ enum Strings {
         static let startButton = "play.fill"
         static let winSummary = "party.popper.fill"
         static let lossSummary = "arrow.counterclockwise.circle.fill"
+        static let soundOn = "speaker.wave.2.fill"
+        static let soundOff = "speaker.slash.fill"
     }
 
     enum Category {
@@ -100,6 +102,8 @@ enum Strings {
         static let lostTitle = "Try Again"
         static let nextRound = "Next Round"
         static let changeCategory = "Change Category"
+        static let soundOn = "Sound On"
+        static let soundOff = "Sound Off"
         static let keyboardTopRow = "QWERTYUIOP"
         static let keyboardMiddleRow = "ASDFGHJKL"
         static let keyboardBottomRow = "ZXCVBNM"

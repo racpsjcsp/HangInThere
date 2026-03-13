@@ -18,28 +18,33 @@ struct GameScreenView: View {
 
     var body: some View {
         if let state = viewModel.gameViewState {
-            ScrollView {
-                VStack(spacing: AppTheme.Spacing.large) {
-                    topBar(state: state)
-                    puzzleCard(state: state)
-                    if let summary = state.summary {
-                        summaryCard(summary: summary)
+            GeometryReader { proxy in
+                let horizontalInset = horizontalPadding(for: proxy.size.width)
+                ScrollView {
+                    VStack(spacing: AppTheme.Spacing.large) {
+                        topBar(state: state)
+                        puzzleCard(state: state)
+                        if let summary = state.summary {
+                            summaryCard(summary: summary)
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .bottom).combined(with: .scale(scale: 0.96)).combined(with: .opacity),
+                                    removal: .opacity
+                                ))
+                        } else {
+                            VStack(spacing: AppTheme.Spacing.large) {
+                                powersCard(state: state)
+                                keyboard(state: state)
+                            }
                             .transition(.asymmetric(
-                                insertion: .move(edge: .bottom).combined(with: .scale(scale: 0.96)).combined(with: .opacity),
-                                removal: .opacity
+                                insertion: .opacity,
+                                removal: .move(edge: .bottom).combined(with: .opacity)
                             ))
-                    } else {
-                        VStack(spacing: AppTheme.Spacing.large) {
-                            powersCard(state: state)
-                            keyboard(state: state)
                         }
-                        .transition(.asymmetric(
-                            insertion: .opacity,
-                            removal: .move(edge: .bottom).combined(with: .opacity)
-                        ))
                     }
+                    .frame(width: max(0, proxy.size.width - (horizontalInset * 2)), alignment: .top)
+                    .padding(.horizontal, horizontalInset)
+                    .padding(.vertical, AppTheme.Spacing.large)
                 }
-                .padding(AppTheme.Spacing.large)
             }
             .animation(AppTheme.Motion.summaryReveal, value: state.summary?.title)
             .onChange(of: state.maskedAnswer) { oldValue, newValue in
@@ -59,24 +64,71 @@ struct GameScreenView: View {
         }
     }
 
+    private func horizontalPadding(for width: CGFloat) -> CGFloat {
+        switch width {
+        case ..<390:
+            AppTheme.Spacing.small
+        case ..<430:
+            AppTheme.Spacing.medium
+        default:
+            AppTheme.Spacing.large
+        }
+    }
+
     private func topBar(state: GameViewState) -> some View {
-        HStack(spacing: AppTheme.Spacing.xSmall) {
-            AppPill(text: state.categoryTitle, color: state.categoryTint)
-                .accessibilityIdentifier(AccessibilityID.Game.categoryTitle)
-                .fixedSize(horizontal: true, vertical: false)
-            difficultyBadge(state: state)
-            Spacer()
-            AppButton(
-                title: state.categoriesButtonTitle,
-                systemImage: Strings.Symbol.categoriesButton,
-                style: .ghost,
-                layout: .horizontal,
-                accessibilityIdentifier: AccessibilityID.Game.categoriesButton,
-                action: onGoToCategories
-                )
+        compactTopBar(state: state)
+    }
+
+    private func compactTopBar(state: GameViewState) -> some View {
+        HStack(spacing: AppTheme.Spacing.xxSmall) {
+            HStack(spacing: AppTheme.Spacing.xSmall) {
+                compactPill(text: state.categoryTitle, color: state.categoryTint)
+                    .accessibilityIdentifier(AccessibilityID.Game.categoryTitle)
+                difficultyBadge(state: state)
+            }
             .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: AppTheme.Spacing.xxxSmall)
+
+            HStack(spacing: AppTheme.Spacing.xxSmall) {
+                soundToggleButton
+                categoriesButton(state: state)
+            }
             .layoutPriority(1)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func categoriesButton(state: GameViewState) -> some View {
+        AppButton(
+            title: state.categoriesButtonTitle,
+            systemImage: Strings.Symbol.categoriesButton,
+            style: .ghost,
+            layout: .horizontal,
+            accessibilityIdentifier: AccessibilityID.Game.categoriesButton,
+            action: onGoToCategories
+        )
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var soundToggleButton: some View {
+        Button {
+            viewModel.toggleSound()
+        } label: {
+            Image(systemName: viewModel.isSoundEnabled ? Strings.Symbol.soundOn : Strings.Symbol.soundOff)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(AppTheme.textPrimary)
+                .frame(width: 36, height: 36)
+                .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+                        .stroke(AppTheme.panelBorder, lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(viewModel.isSoundEnabled ? Strings.Game.soundOn : Strings.Game.soundOff)
+        .accessibilityIdentifier(AccessibilityID.Game.soundToggleButton)
+        .fixedSize()
     }
 
     private func difficultyBadge(state: GameViewState) -> some View {
@@ -90,11 +142,23 @@ struct GameScreenView: View {
         .accessibilityLabel(state.gameLevelTitle)
         .font(AppTheme.Typography.caption())
         .foregroundStyle(Color.black.opacity(0.78))
-        .padding(.horizontal, AppTheme.Spacing.xxSmall)
-        .padding(.vertical, AppTheme.Spacing.xxSmall)
+        .padding(.horizontal, AppTheme.Spacing.xxxSmall)
+        .padding(.vertical, 5)
         .background(state.gameLevelTint, in: Capsule())
         .accessibilityIdentifier(AccessibilityID.Game.modeBadge)
         .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private func compactPill(text: String, color: Color) -> some View {
+        Text(text)
+            .font(AppTheme.Typography.caption())
+            .foregroundStyle(Color.black.opacity(0.78))
+            .lineLimit(1)
+            .minimumScaleFactor(0.9)
+            .padding(.horizontal, AppTheme.Spacing.xxxSmall)
+            .padding(.vertical, 5)
+            .background(color, in: Capsule())
+            .fixedSize(horizontal: true, vertical: false)
     }
 
     private func puzzleCard(state: GameViewState) -> some View {

@@ -7,17 +7,21 @@
 
 import SwiftUI
 
+@MainActor
 struct MainView: View {
     @StateObject private var viewModel: AppViewModel
 
     init(
         wordRepository: any WordRepository = InMemoryWordRepository.default,
-        progressRepository: any ProgressRepository = UserDefaultsProgressRepository()
+        progressRepository: any ProgressRepository = UserDefaultsProgressRepository(),
+        soundPlayer: (any SoundPlaying)? = nil
     ) {
+        let resolvedSoundPlayer = soundPlayer ?? SoundEffectPlayer.shared
         _viewModel = StateObject(
             wrappedValue: AppViewModel(
                 wordRepository: wordRepository,
-                progressRepository: progressRepository
+                progressRepository: progressRepository,
+                soundPlayer: resolvedSoundPlayer
             )
         )
     }

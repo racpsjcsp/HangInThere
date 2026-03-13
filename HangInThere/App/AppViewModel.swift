@@ -19,10 +19,16 @@ final class AppViewModel: ObservableObject {
     private let goToCategoriesFlowUseCase = GoToCategoriesFlowUseCase()
     private let continueAfterRoundFlowUseCase = ContinueAfterRoundFlowUseCase()
 
-    init(wordRepository: any WordRepository, progressRepository: any ProgressRepository) {
+    init(
+        wordRepository: any WordRepository,
+        progressRepository: any ProgressRepository,
+        soundPlayer: (any SoundPlaying)? = nil
+    ) {
+        let resolvedSoundPlayer = soundPlayer ?? SilentSoundPlayer.shared
         self.gameViewModel = HangmanGameViewModel(
             wordRepository: wordRepository,
-            progressRepository: progressRepository
+            progressRepository: progressRepository,
+            soundPlayer: resolvedSoundPlayer
         )
     }
 

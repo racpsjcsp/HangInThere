@@ -21,6 +21,7 @@ final class HangmanGameViewModel: ObservableObject {
 
     private let startRoundUseCase: StartRoundUseCase
     private let progressRepository: any ProgressRepository
+    private let soundPlayer: any SoundPlaying
     private let guessLetterUseCase = GuessLetterUseCase()
     private let usePowerUpUseCase = UsePowerUpUseCase()
     private let resolveRoundStateUseCase = ResolveRoundStateUseCase()
@@ -28,13 +29,20 @@ final class HangmanGameViewModel: ObservableObject {
     convenience init() {
         self.init(
             wordRepository: InMemoryWordRepository.default,
-            progressRepository: UserDefaultsProgressRepository()
+            progressRepository: UserDefaultsProgressRepository(),
+            soundPlayer: SoundEffectPlayer.shared
         )
     }
 
-    init(wordRepository: any WordRepository, progressRepository: any ProgressRepository) {
+    init(
+        wordRepository: any WordRepository,
+        progressRepository: any ProgressRepository,
+        soundPlayer: (any SoundPlaying)? = nil
+    ) {
+        let resolvedSoundPlayer = soundPlayer ?? SilentSoundPlayer.shared
         self.startRoundUseCase = StartRoundUseCase(wordRepository: wordRepository)
         self.progressRepository = progressRepository
+        self.soundPlayer = resolvedSoundPlayer
         self.progress = progressRepository.loadProgress()
     }
 
@@ -147,6 +155,10 @@ final class HangmanGameViewModel: ObservableObject {
         selectedLevel
     }
 
+    var isSoundEnabled: Bool {
+        soundPlayer.isSoundEnabled
+    }
+
     func showCategorySelection(message: String) {
         withAnimation(AppTheme.Motion.screenTransition) {
             roundPhase = .playing
@@ -171,6 +183,11 @@ final class HangmanGameViewModel: ObservableObject {
         selectedCategory = category
         selectedLevel = level
         startRound(in: category, level: level)
+    }
+
+    func toggleSound() {
+        soundPlayer.isSoundEnabled.toggle()
+        objectWillChange.send()
     }
 
     func guess(_ letter: String) {
@@ -210,17 +227,22 @@ final class HangmanGameViewModel: ObservableObject {
             self.progress = progress
             persistProgress()
             message = Strings.Message.revealed(String(revealed))
-            apply(resolveRoundStateUseCase.execute(
+            let resolution = resolveRoundStateUseCase.execute(
                 puzzle: puzzle,
                 progress: progress,
                 previousWrongGuesses: puzzle.wrongGuesses
-            ))
+            )
+            if case .playing = resolution {
+                soundPlayer.play(.powerUp)
+            }
+            apply(resolution, triggeredByPowerUp: true)
 
         case .freeGuessShield(let puzzle, let progress):
             self.puzzle = puzzle
             self.progress = progress
             persistProgress()
             message = Strings.Message.freeGuessActivated
+            soundPlayer.play(.powerUp)
         }
     }
 
@@ -239,15 +261,19 @@ final class HangmanGameViewModel: ObservableObject {
         }
     }
 
-    private func apply(_ resolution: RoundResolution) {
+    private func apply(_ resolution: RoundResolution, triggeredByPowerUp: Bool = false) {
         switch resolution {
         case .playing(let wrongGuessesChanged, let freeGuessShield, let remainingLives):
             if !wrongGuessesChanged {
                 message = freeGuessShield
                     ? Strings.Message.freeGuessReady
                     : Strings.Message.goodGuess
+                if !triggeredByPowerUp {
+                    soundPlayer.play(.correctGuess)
+                }
             } else {
                 message = Strings.Message.missed(remainingLives)
+                soundPlayer.play(.wrongGuess)
             }
 
         case .won(let puzzle, let progress, let reward, let levelsGained):
@@ -261,6 +287,7 @@ final class HangmanGameViewModel: ObservableObject {
             message = levelsGained > 0
                 ? Strings.Message.levelUp(progress.level)
                 : Strings.Message.roundWon(reward)
+            soundPlayer.play(.winRound)
 
         case .lost(let puzzle):
             withAnimation(AppTheme.Motion.summaryReveal) {
@@ -269,6 +296,7 @@ final class HangmanGameViewModel: ObservableObject {
             }
             lastAwardedXP = 0
             message = Strings.Message.roundLost(puzzle.answer)
+            soundPlayer.play(.loseRound)
         }
     }
 

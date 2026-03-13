@@ -83,7 +83,7 @@ struct AppButton: View {
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
-                    .stroke(borderColor, lineWidth: style == .ghost ? 1 : 0)
+                    .stroke(borderColor, lineWidth: borderLineWidth)
             }
         }
         .buttonStyle(.plain)
@@ -149,16 +149,18 @@ struct AppButton: View {
         case .ghost:
             AnyShapeStyle(Color.white.opacity(0.08))
         case .powerReveal:
-            AnyShapeStyle(LinearGradient(colors: [AppTheme.warning, AppTheme.primary], startPoint: .topLeading, endPoint: .bottomTrailing))
+            AnyShapeStyle(LinearGradient(colors: [AppTheme.powerPurple, AppTheme.powerPurpleDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
         case .powerFreeGuess:
-            AnyShapeStyle(LinearGradient(colors: [AppTheme.secondary, AppTheme.primary.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+            AnyShapeStyle(LinearGradient(colors: [AppTheme.powerBlue, AppTheme.powerBlueDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary, .secondary, .powerReveal, .powerFreeGuess:
+        case .primary, .secondary:
             return Color.black.opacity(0.8)
+        case .powerReveal, .powerFreeGuess:
+            return Color.white.opacity(0.96)
         case .ghost:
             return AppTheme.textPrimary
         }
@@ -168,8 +170,21 @@ struct AppButton: View {
         switch style {
         case .ghost:
             return AppTheme.panelBorder
+        case .powerReveal:
+            return AppTheme.powerPurple.opacity(0.55)
+        case .powerFreeGuess:
+            return AppTheme.powerBlue.opacity(0.55)
         default:
             return .clear
+        }
+    }
+
+    private var borderLineWidth: CGFloat {
+        switch style {
+        case .ghost, .powerReveal, .powerFreeGuess:
+            return 1
+        default:
+            return 0
         }
     }
 }

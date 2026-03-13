@@ -34,6 +34,7 @@ enum AccessibilityID {
         static let categoryTitle = "game.categoryTitle"
         static let modeBadge = "game.modeBadge"
         static let categoriesButton = "game.categoriesButton"
+        static let soundToggleButton = "game.soundToggleButton"
         static let maskedAnswer = "game.maskedAnswer"
         static let hintText = "game.hintText"
         static let revealButton = "game.revealButton"

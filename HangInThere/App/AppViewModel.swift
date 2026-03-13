@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class AppViewModel: ObservableObject {
@@ -50,18 +51,20 @@ final class AppViewModel: ObservableObject {
     }
 
     private func apply(_ transition: AppFlowTransition) {
-        if let message = transition.categorySelectionMessage {
-            gameViewModel.showCategorySelection(message: message)
-        }
+        withAnimation(AppTheme.Motion.screenTransition) {
+            if let message = transition.categorySelectionMessage {
+                gameViewModel.showCategorySelection(message: message)
+            }
 
-        if transition.phase == .levelSelection, let category = transition.selectedCategory {
-            gameViewModel.selectCategory(category)
-        }
+            if transition.phase == .levelSelection, let category = transition.selectedCategory {
+                gameViewModel.selectCategory(category)
+            }
 
-        if let category = transition.selectedCategory, let level = transition.selectedLevel {
-            gameViewModel.startRound(for: category, level: level)
-        }
+            if let category = transition.selectedCategory, let level = transition.selectedLevel {
+                gameViewModel.startRound(for: category, level: level)
+            }
 
-        phase = transition.phase
+            phase = transition.phase
+        }
     }
 }

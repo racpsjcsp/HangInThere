@@ -26,30 +26,47 @@ struct MainView: View {
         ZStack {
             AppTheme.background.ignoresSafeArea()
 
-            switch viewModel.phase {
-            case .splash:
-                SplashScreenView(onStart: viewModel.start)
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
-            case .categorySelection:
-                CategorySelectionView(viewModel: viewModel.gameViewModel, onChooseCategory: viewModel.chooseCategory)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-            case .levelSelection:
-                GameLevelSelectionView(
-                    viewModel: viewModel.gameViewModel,
-                    onChooseLevel: viewModel.chooseLevel,
-                    onGoBack: viewModel.goToCategories
-                )
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-            case .game:
-                GameScreenView(
-                    viewModel: viewModel.gameViewModel,
-                    onGoToCategories: viewModel.goToCategories,
-                    onContinueAfterRound: viewModel.continueAfterRound
-                )
-                    .transition(.opacity)
-            }
+            phaseView
         }
         .animation(AppTheme.Motion.screenTransition, value: viewModel.phase)
+    }
+
+    @ViewBuilder
+    private var phaseView: some View {
+        switch viewModel.phase {
+        case .splash:
+            SplashScreenView(onStart: viewModel.start)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                    removal: .opacity
+                ))
+        case .categorySelection:
+            CategorySelectionView(viewModel: viewModel.gameViewModel, onChooseCategory: viewModel.chooseCategory)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+        case .levelSelection:
+            GameLevelSelectionView(
+                viewModel: viewModel.gameViewModel,
+                onChooseLevel: viewModel.chooseLevel,
+                onGoBack: viewModel.goToCategories
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .trailing).combined(with: .opacity),
+                removal: .move(edge: .leading).combined(with: .opacity)
+            ))
+        case .game:
+            GameScreenView(
+                viewModel: viewModel.gameViewModel,
+                onGoToCategories: viewModel.goToCategories,
+                onContinueAfterRound: viewModel.continueAfterRound
+            )
+            .transition(.asymmetric(
+                insertion: .move(edge: .bottom).combined(with: .opacity),
+                removal: .opacity
+            ))
+        }
     }
 }
 

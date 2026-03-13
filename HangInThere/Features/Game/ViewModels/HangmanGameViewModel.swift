@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class HangmanGameViewModel: ObservableObject {
@@ -81,7 +82,7 @@ final class HangmanGameViewModel: ObservableObject {
                     ? Strings.Game.wonSubtitle(lastAwardedXP)
                     : Strings.Game.lostSubtitle(puzzle.answer),
                 symbol: isWin ? Strings.Symbol.winSummary : Strings.Symbol.lossSummary,
-                tint: isWin ? AppTheme.warning : AppTheme.accent
+                tint: isWin ? AppTheme.success : AppTheme.accent
             )
         } else {
             summary = nil
@@ -147,19 +148,23 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func showCategorySelection(message: String) {
-        roundPhase = .playing
-        selectedCategory = nil
-        selectedLevel = nil
-        puzzle = nil
-        self.message = message
+        withAnimation(AppTheme.Motion.screenTransition) {
+            roundPhase = .playing
+            selectedCategory = nil
+            selectedLevel = nil
+            puzzle = nil
+            self.message = message
+        }
     }
 
     func selectCategory(_ category: HangmanCategory) {
-        selectedCategory = category
-        selectedLevel = nil
-        puzzle = nil
-        roundPhase = .playing
-        message = Strings.LevelSelection.subtitle(category.title)
+        withAnimation(AppTheme.Motion.screenTransition) {
+            selectedCategory = category
+            selectedLevel = nil
+            puzzle = nil
+            roundPhase = .playing
+            message = Strings.LevelSelection.subtitle(category.title)
+        }
     }
 
     func startRound(for category: HangmanCategory, level: GameLevel = .medium) {
@@ -170,7 +175,9 @@ final class HangmanGameViewModel: ObservableObject {
 
     func guess(_ letter: String) {
         guard let puzzle, let result = guessLetterUseCase.execute(puzzle: puzzle, letter: letter) else { return }
-        self.puzzle = result.puzzle
+        withAnimation(AppTheme.Motion.cardBounce) {
+            self.puzzle = result.puzzle
+        }
         apply(resolveRoundStateUseCase.execute(
             puzzle: result.puzzle,
             progress: progress,
@@ -224,10 +231,12 @@ final class HangmanGameViewModel: ObservableObject {
 
     private func startRound(in category: HangmanCategory, level: GameLevel) {
         let nextPuzzle = startRoundUseCase.execute(category: category, level: level)
-        puzzle = nextPuzzle
-        roundPhase = .playing
-        lastAwardedXP = 0
-        message = Strings.Message.makeFirstGuess
+        withAnimation(AppTheme.Motion.screenTransition) {
+            puzzle = nextPuzzle
+            roundPhase = .playing
+            lastAwardedXP = 0
+            message = Strings.Message.makeFirstGuess
+        }
     }
 
     private func apply(_ resolution: RoundResolution) {
@@ -242,18 +251,22 @@ final class HangmanGameViewModel: ObservableObject {
             }
 
         case .won(let puzzle, let progress, let reward, let levelsGained):
-            self.puzzle = puzzle
-            self.progress = progress
+            withAnimation(AppTheme.Motion.summaryReveal) {
+                self.puzzle = puzzle
+                self.progress = progress
+                lastAwardedXP = reward
+                roundPhase = .summary
+            }
             persistProgress()
-            lastAwardedXP = reward
-            roundPhase = .summary
             message = levelsGained > 0
                 ? Strings.Message.levelUp(progress.level)
                 : Strings.Message.roundWon(reward)
 
         case .lost(let puzzle):
-            self.puzzle = puzzle
-            roundPhase = .summary
+            withAnimation(AppTheme.Motion.summaryReveal) {
+                self.puzzle = puzzle
+                roundPhase = .summary
+            }
             lastAwardedXP = 0
             message = Strings.Message.roundLost(puzzle.answer)
         }

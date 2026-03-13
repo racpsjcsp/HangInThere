@@ -11,6 +11,10 @@ struct GameScreenView: View {
     @ObservedObject var viewModel: HangmanGameViewModel
     let onGoToCategories: () -> Void
     let onContinueAfterRound: () -> Void
+    @State private var correctPulse = false
+    @State private var wrongFlash = false
+    @State private var shakeTrigger: CGFloat = 0
+    @State private var showWinCelebration = false
 
     var body: some View {
         if let state = viewModel.gameViewState {
@@ -20,12 +24,37 @@ struct GameScreenView: View {
                     puzzleCard(state: state)
                     if let summary = state.summary {
                         summaryCard(summary: summary)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .scale(scale: 0.96)).combined(with: .opacity),
+                                removal: .opacity
+                            ))
                     } else {
-                        powersCard(state: state)
-                        keyboard(state: state)
+                        VStack(spacing: AppTheme.Spacing.large) {
+                            powersCard(state: state)
+                            keyboard(state: state)
+                        }
+                        .transition(.asymmetric(
+                            insertion: .opacity,
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        ))
                     }
                 }
                 .padding(AppTheme.Spacing.large)
+            }
+            .animation(AppTheme.Motion.summaryReveal, value: state.summary?.title)
+            .onChange(of: state.maskedAnswer) { oldValue, newValue in
+                guard oldValue != newValue, state.isPlaying else { return }
+                triggerCorrectFeedback()
+            }
+            .onChange(of: state.wrongValue) { oldValue, newValue in
+                guard oldValue != newValue, state.isPlaying else { return }
+                triggerWrongFeedback()
+            }
+            .onChange(of: state.summary?.title) { _, _ in
+                triggerWinCelebrationIfNeeded(for: state.summary)
+            }
+            .onAppear {
+                triggerWinCelebrationIfNeeded(for: state.summary)
             }
         }
     }
@@ -113,6 +142,23 @@ struct GameScreenView: View {
                     .multilineTextAlignment(.center)
             }
         }
+        .scaleEffect(correctPulse ? 1.02 : 1)
+        .modifier(ShakeEffect(animatableData: shakeTrigger))
+        .overlay {
+            RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
+                .stroke(
+                    wrongFlash
+                    ? AppTheme.accent.opacity(0.8)
+                    : AppTheme.success.opacity(correctPulse ? 0.75 : 0),
+                    lineWidth: 2
+                )
+        }
+        .shadow(
+            color: wrongFlash
+                ? AppTheme.accent.opacity(0.28)
+                : AppTheme.success.opacity(correctPulse ? 0.25 : 0),
+            radius: correctPulse || wrongFlash ? 18 : 0
+        )
     }
 
     private func powersCard(state: GameViewState) -> some View {
@@ -191,12 +237,16 @@ struct GameScreenView: View {
                         .foregroundStyle(summary.tint)
                 }
                 .padding(.top, AppTheme.Spacing.xxSmall)
+                .scaleEffect(showWinCelebration && summary.isWin ? 1.14 : 1)
+                .animation(AppTheme.Motion.celebration, value: showWinCelebration)
 
                 VStack(spacing: AppTheme.Spacing.xxSmall) {
                     Text(summary.title)
                         .font(AppTheme.Typography.title())
                         .foregroundStyle(summary.tint)
                         .accessibilityIdentifier(AccessibilityID.Game.summaryTitle)
+                        .scaleEffect(showWinCelebration && summary.isWin ? 1.08 : 1)
+                        .animation(AppTheme.Motion.celebration, value: showWinCelebration)
 
                     Text(summary.subtitle)
                         .font(AppTheme.Typography.body())
@@ -228,6 +278,109 @@ struct GameScreenView: View {
             .frame(maxWidth: .infinity)
         }
         .background(summary.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
+        .overlay(alignment: .top) {
+            if summary.isWin {
+                WinCelebrationView(isActive: showWinCelebration)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private func triggerCorrectFeedback() {
+        withAnimation(AppTheme.Motion.feedbackPulse) {
+            correctPulse = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            withAnimation(AppTheme.Motion.feedbackPulse) {
+                correctPulse = false
+            }
+        }
+    }
+
+    private func triggerWrongFeedback() {
+        withAnimation(AppTheme.Motion.shake) {
+            shakeTrigger += 1
+        }
+
+        withAnimation(.easeOut(duration: 0.18)) {
+            wrongFlash = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            withAnimation(.easeOut(duration: 0.18)) {
+                wrongFlash = false
+            }
+        }
+    }
+
+    private func triggerWinCelebrationIfNeeded(for summary: SummaryViewState?) {
+        guard let summary else {
+            showWinCelebration = false
+            return
+        }
+
+        guard summary.isWin else {
+            showWinCelebration = false
+            return
+        }
+
+        showWinCelebration = false
+        DispatchQueue.main.async {
+            withAnimation(AppTheme.Motion.celebration) {
+                showWinCelebration = true
+            }
+        }
+    }
+}
+
+private struct ShakeEffect: GeometryEffect {
+    var amount: CGFloat = 10
+    var shakesPerUnit: CGFloat = 3
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(
+            CGAffineTransform(
+                translationX: amount * sin(animatableData * .pi * shakesPerUnit),
+                y: 0
+            )
+        )
+    }
+}
+
+private struct WinCelebrationView: View {
+    let isActive: Bool
+
+    private let particles = Array(0..<18)
+    private let colors: [Color] = [AppTheme.warning, AppTheme.primary, AppTheme.secondary, AppTheme.accent, AppTheme.success]
+
+    var body: some View {
+        ZStack {
+            ForEach(particles, id: \.self) { index in
+                let angle = (Double(index) / Double(particles.count)) * .pi * 2
+                let radius = 56 + CGFloat(index % 4) * 16
+                let xOffset = cos(angle) * radius
+                let yOffset = sin(angle) * radius * 0.75
+                let color = colors[index % colors.count]
+
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(color)
+                    .frame(width: index.isMultiple(of: 2) ? 10 : 6, height: 18)
+                    .rotationEffect(.degrees(Double(index * 27)))
+                    .offset(
+                        x: isActive ? xOffset : 0,
+                        y: isActive ? yOffset - 18 : 0
+                    )
+                    .opacity(isActive ? 0.95 : 0)
+                    .scaleEffect(isActive ? 1 : 0.3)
+                    .animation(
+                        AppTheme.Motion.celebration.delay(Double(index) * 0.015),
+                        value: isActive
+                    )
+            }
+        }
+        .frame(height: 130)
     }
 }
 

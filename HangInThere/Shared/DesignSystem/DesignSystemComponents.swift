@@ -206,6 +206,7 @@ struct AppProgressBar: View {
                 Capsule()
                     .fill(fill)
                     .frame(width: proxy.size.width * max(0, min(progress, 1)))
+                    .animation(AppTheme.Motion.progressFill, value: progress)
             }
         }
         .frame(height: 10)

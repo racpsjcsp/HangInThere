@@ -58,5 +58,10 @@ enum AppTheme {
     enum Motion {
         static let screenTransition = Animation.spring(response: 0.5, dampingFraction: 0.88)
         static let cardBounce = Animation.spring(response: 0.4, dampingFraction: 0.78)
+        static let progressFill = Animation.easeInOut(duration: 0.45)
+        static let feedbackPulse = Animation.spring(response: 0.28, dampingFraction: 0.58)
+        static let summaryReveal = Animation.spring(response: 0.48, dampingFraction: 0.82)
+        static let shake = Animation.linear(duration: 0.45)
+        static let celebration = Animation.spring(response: 0.6, dampingFraction: 0.72)
     }
 }

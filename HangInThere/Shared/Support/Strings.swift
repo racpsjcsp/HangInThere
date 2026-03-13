@@ -25,6 +25,8 @@ enum Strings {
         static let nextRoundButton = "arrow.right.circle.fill"
         static let changeCategoryButton = "arrow.uturn.backward.circle"
         static let startButton = "play.fill"
+        static let winSummary = "party.popper.fill"
+        static let lossSummary = "arrow.counterclockwise.circle.fill"
     }
 
     enum Category {
@@ -47,11 +49,11 @@ enum Strings {
     enum Splash {
         static let badge = "Word Adventure"
         static let title = "Hang In There"
-        static let subtitle = "A polished Hangman challenge with categories, level progression, and small power boosts when you need them most."
+        static let subtitle = "A pick-up-and-play word game with clear hints, smart difficulty levels, and satisfying progression."
         static let featuresTitle = "Game Features"
-        static let categoriesFeature = "Four categories: animals, geography, foods, and objects"
-        static let progressionFeature = "Reach level 3 to unlock powers, then earn capped milestone refills as you climb"
-        static let powersFeature = "Use Reveal Letter and Free Guess for tight rounds"
+        static let categoriesFeature = "Play across Animals, Geography, Foods, and Objects"
+        static let progressionFeature = "Level up, unlock powers at level 3, and earn limited refills over time"
+        static let powersFeature = "Use Reveal Letter and Free Guess when a round gets tense"
         static let start = "Start Playing"
     }
 

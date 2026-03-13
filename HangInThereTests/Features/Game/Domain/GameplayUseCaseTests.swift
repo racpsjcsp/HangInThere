@@ -43,6 +43,25 @@ struct GameplayUseCaseTests {
         #expect(hardPuzzle.word == hardWord)
     }
 
+    @Test func repositoryDoesNotRepeatWordsUntilPoolIsExhausted() async throws {
+        let firstWord = HangmanWord(answer: "Pizza", hint: "Easy food", difficulty: 1)
+        let secondWord = HangmanWord(answer: "Burger", hint: "Another easy food", difficulty: 1)
+        let repository = InMemoryWordRepository(
+            wordsByCategoryAndLevel: [
+                .foods: [
+                    .easy: [firstWord, secondWord]
+                ]
+            ]
+        )
+
+        let pulledAnswers = Set([
+            repository.randomWord(for: .foods, level: .easy).answer,
+            repository.randomWord(for: .foods, level: .easy).answer
+        ])
+
+        #expect(pulledAnswers == Set([firstWord.answer, secondWord.answer]))
+    }
+
     @Test func resolveRoundStateAwardsExperienceForWins() async throws {
         let puzzle = HangmanPuzzle(
             category: .animals,

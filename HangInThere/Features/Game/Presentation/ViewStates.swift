@@ -50,8 +50,11 @@ struct GameLevelSelectionViewState {
 }
 
 struct SummaryViewState {
+    let isWin: Bool
     let title: String
     let subtitle: String
+    let symbol: String
+    let tint: Color
 }
 
 struct GameViewState {

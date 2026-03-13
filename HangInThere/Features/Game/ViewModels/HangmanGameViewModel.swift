@@ -73,11 +73,15 @@ final class HangmanGameViewModel: ObservableObject {
 
         let summary: SummaryViewState?
         if roundPhase == .summary {
+            let isWin = puzzle.status == .won
             summary = SummaryViewState(
-                title: puzzle.status == .won ? Strings.Game.wonTitle : Strings.Game.lostTitle,
-                subtitle: puzzle.status == .won
+                isWin: isWin,
+                title: isWin ? Strings.Game.wonTitle : Strings.Game.lostTitle,
+                subtitle: isWin
                     ? Strings.Game.wonSubtitle(lastAwardedXP)
-                    : Strings.Game.lostSubtitle(puzzle.answer)
+                    : Strings.Game.lostSubtitle(puzzle.answer),
+                symbol: isWin ? Strings.Symbol.winSummary : Strings.Symbol.lossSummary,
+                tint: isWin ? AppTheme.warning : AppTheme.accent
             )
         } else {
             summary = nil

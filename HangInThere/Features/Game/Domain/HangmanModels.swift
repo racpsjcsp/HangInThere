@@ -273,15 +273,19 @@ struct HangmanPuzzle: Equatable {
     }
 }
 
-struct InMemoryWordRepository: WordRepository {
+final class InMemoryWordRepository: WordRepository {
     let wordsByCategoryAndLevel: [HangmanCategory: [GameLevel: [HangmanWord]]]
+    private var remainingWordsByCategoryAndLevel: [HangmanCategory: [GameLevel: [HangmanWord]]]
 
     init(wordsByCategoryAndLevel: [HangmanCategory: [GameLevel: [HangmanWord]]]) {
         self.wordsByCategoryAndLevel = wordsByCategoryAndLevel
+        self.remainingWordsByCategoryAndLevel = wordsByCategoryAndLevel.mapValues { levels in
+            levels.mapValues { $0.shuffled() }
+        }
     }
 
     init(wordsByCategory: [HangmanCategory: [HangmanWord]]) {
-        self.wordsByCategoryAndLevel = Dictionary(
+        let leveledWords = Dictionary(
             uniqueKeysWithValues: wordsByCategory.map { category, words in
                 (
                     category,
@@ -293,15 +297,20 @@ struct InMemoryWordRepository: WordRepository {
                 )
             }
         )
+        self.wordsByCategoryAndLevel = leveledWords
+        self.remainingWordsByCategoryAndLevel = leveledWords.mapValues { levels in
+            levels.mapValues { $0.shuffled() }
+        }
     }
 
     func randomWord(for category: HangmanCategory, level: GameLevel) -> HangmanWord {
-        if let word = wordsByCategoryAndLevel[category]?[level]?.randomElement() {
-            return word
+        if let nextWord = dequeueWord(for: category, level: level) {
+            return nextWord
         }
 
-        if let word = wordsByCategoryAndLevel[category]?.values.flatMap({ $0 }).randomElement() {
-            return word
+        if let fallbackLevel = GameLevel.allCases.first(where: { !(wordsByCategoryAndLevel[category]?[$0]?.isEmpty ?? true) }),
+           let fallbackWord = dequeueWord(for: category, level: fallbackLevel) {
+            return fallbackWord
         }
 
         return HangmanWord(
@@ -309,6 +318,14 @@ struct InMemoryWordRepository: WordRepository {
             hint: Strings.Fallback.hint,
             difficulty: 1
         )
+    }
+
+    private func dequeueWord(for category: HangmanCategory, level: GameLevel) -> HangmanWord? {
+        if remainingWordsByCategoryAndLevel[category]?[level]?.isEmpty == true {
+            remainingWordsByCategoryAndLevel[category]?[level] = wordsByCategoryAndLevel[category]?[level]?.shuffled() ?? []
+        }
+
+        return remainingWordsByCategoryAndLevel[category]?[level]?.popLast()
     }
 
     static let `default` = InMemoryWordRepository(wordsByCategoryAndLevel: GameWordBank.wordsByCategoryAndLevel)

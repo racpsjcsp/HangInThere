@@ -31,6 +31,8 @@ struct AppButton: View {
         case primary
         case secondary
         case ghost
+        case powerReveal
+        case powerFreeGuess
     }
 
     enum Layout {
@@ -38,20 +40,44 @@ struct AppButton: View {
         case vertical
     }
 
+    enum Size {
+        case regular
+        case compact
+    }
+
     let title: String
     let systemImage: String?
     let style: Style
     let layout: Layout
+    let size: Size
     let accessibilityIdentifier: String?
     let action: () -> Void
+
+    init(
+        title: String,
+        systemImage: String?,
+        style: Style,
+        layout: Layout,
+        size: Size = .regular,
+        accessibilityIdentifier: String? = nil,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.style = style
+        self.layout = layout
+        self.size = size
+        self.accessibilityIdentifier = accessibilityIdentifier
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {
             content
-            .font(AppTheme.Typography.body())
+            .font(font)
             .foregroundStyle(foregroundColor)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, AppTheme.Spacing.small)
+            .padding(.vertical, verticalPadding)
             .padding(.horizontal, horizontalPadding)
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
@@ -86,6 +112,7 @@ struct AppButton: View {
     private var icon: some View {
         if let systemImage {
             Image(systemName: systemImage)
+                .font(iconFont)
                 .frame(width: layout == .horizontal ? 14 : nil)
         }
     }
@@ -98,12 +125,19 @@ struct AppButton: View {
     }
 
     private var horizontalPadding: CGFloat {
-        switch layout {
-        case .horizontal:
-            return AppTheme.Spacing.small
-        case .vertical:
-            return AppTheme.Spacing.small
-        }
+        size == .compact ? AppTheme.Spacing.xSmall : AppTheme.Spacing.small
+    }
+
+    private var verticalPadding: CGFloat {
+        size == .compact ? AppTheme.Spacing.xSmall : AppTheme.Spacing.small
+    }
+
+    private var font: Font {
+        size == .compact ? AppTheme.Typography.caption() : AppTheme.Typography.body()
+    }
+
+    private var iconFont: Font {
+        size == .compact ? .system(size: 15, weight: .bold) : .system(size: 16, weight: .semibold)
     }
 
     private var background: AnyShapeStyle {
@@ -114,12 +148,16 @@ struct AppButton: View {
             AnyShapeStyle(LinearGradient(colors: [AppTheme.secondary, AppTheme.success], startPoint: .leading, endPoint: .trailing))
         case .ghost:
             AnyShapeStyle(Color.white.opacity(0.08))
+        case .powerReveal:
+            AnyShapeStyle(LinearGradient(colors: [AppTheme.warning, AppTheme.primary], startPoint: .topLeading, endPoint: .bottomTrailing))
+        case .powerFreeGuess:
+            AnyShapeStyle(LinearGradient(colors: [AppTheme.secondary, AppTheme.primary.opacity(0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
         }
     }
 
     private var foregroundColor: Color {
         switch style {
-        case .primary, .secondary:
+        case .primary, .secondary, .powerReveal, .powerFreeGuess:
             return Color.black.opacity(0.8)
         case .ghost:
             return AppTheme.textPrimary

@@ -18,11 +18,11 @@ struct GameScreenView: View {
                 VStack(spacing: AppTheme.Spacing.large) {
                     topBar(state: state)
                     puzzleCard(state: state)
-                    powersCard(state: state)
-                    keyboard(state: state)
-
                     if let summary = state.summary {
                         summaryCard(summary: summary)
+                    } else {
+                        powersCard(state: state)
+                        keyboard(state: state)
                     }
                 }
                 .padding(AppTheme.Spacing.large)
@@ -126,8 +126,9 @@ struct GameScreenView: View {
                     AppButton(
                         title: state.revealButtonTitle,
                         systemImage: state.revealButtonSymbol,
-                        style: .secondary,
+                        style: .powerReveal,
                         layout: .vertical,
+                        size: .compact,
                         accessibilityIdentifier: AccessibilityID.Game.revealButton
                     ) {
                         viewModel.usePower(.revealLetter)
@@ -136,8 +137,9 @@ struct GameScreenView: View {
                     AppButton(
                         title: state.freeGuessButtonTitle,
                         systemImage: state.freeGuessButtonSymbol,
-                        style: .ghost,
+                        style: .powerFreeGuess,
                         layout: .vertical,
+                        size: .compact,
                         accessibilityIdentifier: AccessibilityID.Game.freeGuessButton
                     ) {
                         viewModel.usePower(.freeGuess)
@@ -178,21 +180,35 @@ struct GameScreenView: View {
 
     private func summaryCard(summary: SummaryViewState) -> some View {
         AppCard {
-            VStack(spacing: AppTheme.Spacing.small) {
-                Text(summary.title)
-                    .font(AppTheme.Typography.title())
-                    .foregroundStyle(AppTheme.textPrimary)
-                    .accessibilityIdentifier(AccessibilityID.Game.summaryTitle)
+            VStack(spacing: AppTheme.Spacing.medium) {
+                ZStack {
+                    Circle()
+                        .fill(summary.tint.opacity(0.24))
+                        .frame(width: 84, height: 84)
 
-                Text(summary.subtitle)
-                    .font(AppTheme.Typography.body())
-                    .foregroundStyle(AppTheme.textSecondary)
+                    Image(systemName: summary.symbol)
+                        .font(.system(size: 34, weight: .black))
+                        .foregroundStyle(summary.tint)
+                }
+                .padding(.top, AppTheme.Spacing.xxSmall)
 
-                HStack(spacing: AppTheme.Spacing.small) {
+                VStack(spacing: AppTheme.Spacing.xxSmall) {
+                    Text(summary.title)
+                        .font(AppTheme.Typography.title())
+                        .foregroundStyle(summary.tint)
+                        .accessibilityIdentifier(AccessibilityID.Game.summaryTitle)
+
+                    Text(summary.subtitle)
+                        .font(AppTheme.Typography.body())
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: AppTheme.Spacing.small) {
                     AppButton(
                         title: Strings.Game.nextRound,
                         systemImage: Strings.Symbol.nextRoundButton,
-                        style: .primary,
+                        style: summary.isWin ? .primary : .secondary,
                         layout: .horizontal,
                         accessibilityIdentifier: AccessibilityID.Game.nextRoundButton,
                         action: onContinueAfterRound
@@ -206,9 +222,12 @@ struct GameScreenView: View {
                         accessibilityIdentifier: AccessibilityID.Game.changeCategoryButton,
                         action: onGoToCategories
                     )
+                    .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
+        .background(summary.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
     }
 }
 

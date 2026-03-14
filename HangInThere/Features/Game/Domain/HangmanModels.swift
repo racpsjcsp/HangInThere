@@ -18,7 +18,7 @@ protocol WordRepository {
     func randomWord(for category: HangmanCategory, level: GameLevel) -> HangmanWord
 }
 
-enum HangmanCategory: String, CaseIterable, Identifiable {
+enum HangmanCategory: String, CaseIterable, Identifiable, Codable {
     case animals
     case geography
     case foods
@@ -93,7 +93,7 @@ enum PowerUp: String, CaseIterable, Identifiable {
     }
 }
 
-enum GameLevel: String, CaseIterable, Identifiable {
+enum GameLevel: String, CaseIterable, Identifiable, Codable {
     case easy
     case medium
     case hard

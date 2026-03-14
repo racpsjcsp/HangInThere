@@ -5,6 +5,7 @@
 //  Created by Codex on 12/03/26.
 //
 
+import Foundation
 import Testing
 @testable import HangInThere
 
@@ -124,5 +125,59 @@ struct HangmanGameViewModelTests {
 
         #expect(level == nil)
         #expect(puzzle == nil)
+    }
+
+    @Test func winningRoundUpdatesDailyQuestProgress() async throws {
+        let dailyQuestState = DailyQuestState(
+            generatedOn: Date(timeIntervalSince1970: 1_773_169_600),
+            quests: [DailyQuest(kind: .winOneRound, rewardXP: 50)],
+            completionBonusXP: 200
+        )
+        let dailyQuestRepository = StubDailyQuestRepository(storedState: dailyQuestState)
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(),
+                dailyQuestRepository: dailyQuestRepository,
+                dateProvider: { Date(timeIntervalSince1970: 1_773_169_600) }
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: HangmanCategory.animals, level: GameLevel.easy)
+            viewModel.guess("A")
+        }
+
+        let quest = await MainActor.run { viewModel.dailyQuestState.quests.first(where: { $0.kind == DailyQuestKind.winOneRound }) }
+
+        #expect(quest?.isCompleted == true)
+        #expect(dailyQuestRepository.storedState?.quests.first?.isCompleted == true)
+    }
+
+    @Test func claimingDailyQuestRewardPersistsUpdatedProgress() async throws {
+        let dailyQuestState = DailyQuestState(
+            generatedOn: Date(timeIntervalSince1970: 1_773_169_600),
+            quests: [DailyQuest(kind: .winOneRound, progress: 1, isClaimed: false, rewardXP: 50)],
+            completionBonusXP: 200
+        )
+        let progressRepository = StubProgressRepository()
+        let dailyQuestRepository = StubDailyQuestRepository(storedState: dailyQuestState)
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: progressRepository,
+                dailyQuestRepository: dailyQuestRepository,
+                dateProvider: { Date(timeIntervalSince1970: 1_773_169_600) }
+            )
+        }
+
+        await MainActor.run {
+            viewModel.claimDailyQuest(DailyQuestKind.winOneRound)
+        }
+
+        let storedState = dailyQuestRepository.storedState
+
+        #expect(storedState?.quests.first?.isClaimed == true)
+        #expect(progressRepository.storedProgress.experience == 50)
     }
 }

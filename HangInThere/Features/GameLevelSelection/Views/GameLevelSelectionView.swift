@@ -21,7 +21,7 @@ struct GameLevelSelectionView: View {
 
                     AppButton(
                         title: state.backButtonTitle,
-                        systemImage: "arrow.left.circle",
+                        systemImage: Strings.Symbol.levelSelectionBackButton,
                         style: .ghost,
                         layout: .horizontal,
                         accessibilityIdentifier: AccessibilityID.LevelSelection.backButton,

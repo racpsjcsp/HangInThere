@@ -30,3 +30,19 @@ final class StubProgressRepository: ProgressRepository {
         storedProgress = progress
     }
 }
+
+final class StubDailyQuestRepository: DailyQuestRepository {
+    var storedState: DailyQuestState?
+
+    init(storedState: DailyQuestState? = nil) {
+        self.storedState = storedState
+    }
+
+    func loadState() -> DailyQuestState? {
+        storedState
+    }
+
+    func saveState(_ state: DailyQuestState) {
+        storedState = state
+    }
+}

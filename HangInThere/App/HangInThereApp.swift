@@ -11,6 +11,7 @@ import SwiftUI
 struct HangInThereApp: App {
     private let wordRepository: any WordRepository
     private let progressRepository: any ProgressRepository
+    private let dailyQuestRepository: any DailyQuestRepository
     private let soundPlayer: any SoundPlaying
     private let hapticPlayer: any HapticPlaying
 
@@ -27,11 +28,13 @@ struct HangInThereApp: App {
                 )
             )
             progressRepository = InMemoryProgressRepository()
+            dailyQuestRepository = InMemoryDailyQuestRepository()
             soundPlayer = SilentSoundPlayer.shared
             hapticPlayer = SilentHapticPlayer.shared
         } else {
             wordRepository = InMemoryWordRepository.default
             progressRepository = UserDefaultsProgressRepository()
+            dailyQuestRepository = UserDefaultsDailyQuestRepository()
             soundPlayer = SoundEffectPlayer.shared
             hapticPlayer = HapticFeedbackPlayer.shared
         }
@@ -42,6 +45,7 @@ struct HangInThereApp: App {
             MainView(
                 wordRepository: wordRepository,
                 progressRepository: progressRepository,
+                dailyQuestRepository: dailyQuestRepository,
                 soundPlayer: soundPlayer,
                 hapticPlayer: hapticPlayer
             )

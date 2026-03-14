@@ -15,22 +15,31 @@ final class HangmanGameViewModel: ObservableObject {
     @Published private(set) var selectedCategory: HangmanCategory?
     @Published private(set) var selectedLevel: GameLevel?
     @Published private(set) var puzzle: HangmanPuzzle?
+    @Published private(set) var dailyQuestState: DailyQuestState
     @Published private(set) var message = Strings.Message.initial
     @Published private(set) var lastAwardedXP: Int = 0
     @Published private(set) var roundPhase: RoundPhase = .playing
 
     private let startRoundUseCase: StartRoundUseCase
     private let progressRepository: any ProgressRepository
+    private let dailyQuestRepository: any DailyQuestRepository
     private let soundPlayer: any SoundPlaying
     private let hapticPlayer: any HapticPlaying
+    private let refreshDailyQuestStateUseCase: RefreshDailyQuestStateUseCase
+    private let trackDailyQuestEventUseCase = TrackDailyQuestEventUseCase()
+    private let claimDailyQuestRewardUseCase = ClaimDailyQuestRewardUseCase()
+    private let claimDailyQuestCompletionBonusUseCase = ClaimDailyQuestCompletionBonusUseCase()
+    private let dateProvider: () -> Date
     private let guessLetterUseCase = GuessLetterUseCase()
     private let usePowerUpUseCase = UsePowerUpUseCase()
     private let resolveRoundStateUseCase = ResolveRoundStateUseCase()
+    private var currentRoundUsedPowerUp = false
 
     convenience init() {
         self.init(
             wordRepository: InMemoryWordRepository.default,
             progressRepository: UserDefaultsProgressRepository(),
+            dailyQuestRepository: UserDefaultsDailyQuestRepository(),
             soundPlayer: SoundEffectPlayer.shared,
             hapticPlayer: HapticFeedbackPlayer.shared
         )
@@ -39,6 +48,9 @@ final class HangmanGameViewModel: ObservableObject {
     init(
         wordRepository: any WordRepository,
         progressRepository: any ProgressRepository,
+        dailyQuestRepository: any DailyQuestRepository = InMemoryDailyQuestRepository(),
+        calendar: Calendar = .current,
+        dateProvider: @escaping () -> Date = Date.init,
         soundPlayer: (any SoundPlaying)? = nil,
         hapticPlayer: (any HapticPlaying)? = nil
     ) {
@@ -46,9 +58,17 @@ final class HangmanGameViewModel: ObservableObject {
         let resolvedHapticPlayer = hapticPlayer ?? SilentHapticPlayer.shared
         self.startRoundUseCase = StartRoundUseCase(wordRepository: wordRepository)
         self.progressRepository = progressRepository
+        self.dailyQuestRepository = dailyQuestRepository
         self.soundPlayer = resolvedSoundPlayer
         self.hapticPlayer = resolvedHapticPlayer
+        self.refreshDailyQuestStateUseCase = RefreshDailyQuestStateUseCase(calendar: calendar)
+        self.dateProvider = dateProvider
         self.progress = progressRepository.loadProgress()
+        self.dailyQuestState = refreshDailyQuestStateUseCase.execute(
+            existingState: dailyQuestRepository.loadState(),
+            on: dateProvider()
+        )
+        dailyQuestRepository.saveState(dailyQuestState)
     }
 
     var keyboardRows: [[String]] {
@@ -70,6 +90,9 @@ final class HangmanGameViewModel: ObservableObject {
             revealValue: "\(progress.revealLetterCharges)",
             freeGuessTitle: Strings.Selection.freeGuessStat,
             freeGuessValue: "\(progress.freeGuessCharges)",
+            dailyQuestsTitle: Strings.Selection.dailyQuestsTitle,
+            dailyQuestsSummary: Strings.DailyQuests.categorySummary(dailyQuestState.completedQuestCount, dailyQuestState.quests.count),
+            dailyQuestsButtonTitle: Strings.Selection.openDailyQuests,
             categories: HangmanCategory.allCases.map { category in
                 CategoryCardViewState(
                     category: category,
@@ -79,6 +102,31 @@ final class HangmanGameViewModel: ObservableObject {
                     tint: category.tint
                 )
             }
+        )
+    }
+
+    var dailyQuestMenuViewState: DailyQuestMenuViewState {
+        return DailyQuestMenuViewState(
+            title: Strings.DailyQuests.title,
+            subtitle: Strings.DailyQuests.subtitle(dailyQuestState.completedQuestCount, dailyQuestState.quests.count),
+            sundayBonusText: dailyQuestState.isSundayBonus ? Strings.DailyQuests.sundayBonus : nil,
+            quests: dailyQuestState.quests.map { quest in
+                DailyQuestItemViewState(
+                    kind: quest.kind,
+                    title: Strings.DailyQuests.questTitle(quest.kind),
+                    progressText: Strings.DailyQuests.progress(quest.progress, quest.kind.goal),
+                    rewardText: Strings.DailyQuests.reward(quest.rewardXP),
+                    isCompleted: quest.isCompleted,
+                    isClaimed: quest.isClaimed
+                )
+            },
+            bonus: DailyQuestBonusViewState(
+                title: Strings.DailyQuests.completionBonusTitle,
+                subtitle: Strings.DailyQuests.completionBonusSubtitle,
+                rewardText: Strings.DailyQuests.reward(dailyQuestState.completionBonusXP),
+                isUnlocked: dailyQuestState.allQuestsCompleted,
+                isClaimed: dailyQuestState.isCompletionBonusClaimed
+            )
         )
     }
 
@@ -165,6 +213,7 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func showCategorySelection(message: String) {
+        refreshDailyQuestsIfNeeded()
         withAnimation(AppTheme.Motion.screenTransition) {
             roundPhase = .playing
             selectedCategory = nil
@@ -175,6 +224,7 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func selectCategory(_ category: HangmanCategory) {
+        refreshDailyQuestsIfNeeded()
         withAnimation(AppTheme.Motion.screenTransition) {
             selectedCategory = category
             selectedLevel = nil
@@ -198,8 +248,12 @@ final class HangmanGameViewModel: ObservableObject {
 
     func guess(_ letter: String) {
         guard let puzzle, let result = guessLetterUseCase.execute(puzzle: puzzle, letter: letter) else { return }
+        let guessedCorrectly = result.puzzle.wrongGuesses == result.previousWrongGuesses && result.puzzle.guessedLetters.count > puzzle.guessedLetters.count
         withAnimation(AppTheme.Motion.cardBounce) {
             self.puzzle = result.puzzle
+        }
+        if guessedCorrectly {
+            applyDailyQuestEvent(.correctGuess)
         }
         apply(resolveRoundStateUseCase.execute(
             puzzle: result.puzzle,
@@ -232,6 +286,8 @@ final class HangmanGameViewModel: ObservableObject {
             self.puzzle = puzzle
             self.progress = progress
             persistProgress()
+            currentRoundUsedPowerUp = true
+            applyDailyQuestEvent(.powerUpUsed)
             message = Strings.Message.revealed(String(revealed))
             let resolution = resolveRoundStateUseCase.execute(
                 puzzle: puzzle,
@@ -247,9 +303,31 @@ final class HangmanGameViewModel: ObservableObject {
             self.puzzle = puzzle
             self.progress = progress
             persistProgress()
+            currentRoundUsedPowerUp = true
+            applyDailyQuestEvent(.powerUpUsed)
             message = Strings.Message.freeGuessActivated
             soundPlayer.play(.powerUp)
         }
+    }
+
+    func claimDailyQuest(_ kind: DailyQuestKind) {
+        refreshDailyQuestsIfNeeded()
+        guard let result = claimDailyQuestRewardUseCase.execute(state: dailyQuestState, kind: kind, progress: progress) else { return }
+        dailyQuestState = result.state
+        progress = result.progress
+        message = Strings.Message.dailyQuestRewardClaimed(result.rewardXP)
+        persistProgress()
+        persistDailyQuests()
+    }
+
+    func claimDailyQuestCompletionBonus() {
+        refreshDailyQuestsIfNeeded()
+        guard let result = claimDailyQuestCompletionBonusUseCase.execute(state: dailyQuestState, progress: progress) else { return }
+        dailyQuestState = result.state
+        progress = result.progress
+        message = Strings.Message.dailyQuestBonusClaimed(result.rewardXP)
+        persistProgress()
+        persistDailyQuests()
     }
 
     func isGuessed(_ letter: String) -> Bool {
@@ -258,6 +336,7 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     private func startRound(in category: HangmanCategory, level: GameLevel) {
+        refreshDailyQuestsIfNeeded()
         let nextPuzzle = startRoundUseCase.execute(category: category, level: level)
         withAnimation(AppTheme.Motion.screenTransition) {
             puzzle = nextPuzzle
@@ -265,6 +344,8 @@ final class HangmanGameViewModel: ObservableObject {
             lastAwardedXP = 0
             message = Strings.Message.makeFirstGuess
         }
+        currentRoundUsedPowerUp = false
+        applyDailyQuestEvent(.roundStarted(category: category))
     }
 
     private func apply(_ resolution: RoundResolution, triggeredByPowerUp: Bool = false) {
@@ -290,6 +371,12 @@ final class HangmanGameViewModel: ObservableObject {
                 roundPhase = .summary
             }
             persistProgress()
+            applyDailyQuestEvent(.roundWon(
+                level: selectedLevel ?? .medium,
+                reward: reward,
+                remainingLives: puzzle.remainingLives,
+                usedPowerUp: currentRoundUsedPowerUp
+            ))
             message = levelsGained > 0
                 ? Strings.Message.levelUp(progress.level)
                 : Strings.Message.roundWon(reward)
@@ -301,6 +388,7 @@ final class HangmanGameViewModel: ObservableObject {
                 roundPhase = .summary
             }
             lastAwardedXP = 0
+            applyDailyQuestEvent(.roundLost)
             message = Strings.Message.roundLost(puzzle.answer)
             soundPlayer.play(.loseRound)
         }
@@ -321,6 +409,31 @@ final class HangmanGameViewModel: ObservableObject {
 
     private func persistProgress() {
         progressRepository.saveProgress(progress)
+    }
+
+    func refreshDailyQuests() {
+        refreshDailyQuestsIfNeeded()
+    }
+
+    private func refreshDailyQuestsIfNeeded() {
+        let refreshedState = refreshDailyQuestStateUseCase.execute(
+            existingState: dailyQuestState,
+            on: dateProvider()
+        )
+
+        guard refreshedState != dailyQuestState else { return }
+        dailyQuestState = refreshedState
+        persistDailyQuests()
+    }
+
+    private func applyDailyQuestEvent(_ event: DailyQuestEvent) {
+        refreshDailyQuestsIfNeeded()
+        dailyQuestState = trackDailyQuestEventUseCase.execute(state: dailyQuestState, event: event)
+        persistDailyQuests()
+    }
+
+    private func persistDailyQuests() {
+        dailyQuestRepository.saveState(dailyQuestState)
     }
 }
 

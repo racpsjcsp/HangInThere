@@ -29,6 +29,9 @@ enum Strings {
         static let lossSummary = "arrow.counterclockwise.circle.fill"
         static let soundOn = "speaker.wave.2.fill"
         static let soundOff = "speaker.slash.fill"
+        static let dailyQuestsButton = "calendar.badge.clock"
+        static let dailyQuestsSundayBonus = "sun.max.fill"
+        static let levelSelectionBackButton = "arrow.left.circle"
     }
 
     enum Category {
@@ -64,9 +67,72 @@ enum Strings {
         static let progressTitle = "Player Progress"
         static let revealStat = "Reveal"
         static let freeGuessStat = "Free Guess"
+        static let dailyQuestsTitle = "Daily Quests"
+        static let openDailyQuests = "Open Daily Quests"
 
         static func level(_ value: Int) -> String {
             "Level \(value)"
+        }
+    }
+
+    enum DailyQuests {
+        static let title = "Quests of the Day"
+        static let close = "Done"
+        static let claimed = "Claimed"
+        static let claimReward = "Claim Reward"
+        static let inProgress = "In Progress"
+        static let completeAllFirst = "Complete all quests first"
+        static let sundayBonus = "Sunday Bonus: 1.5x Quest XP"
+        static let completionBonusTitle = "Complete All Daily Quests"
+        static let completionBonusSubtitle = "Finish all three quests to unlock the bonus reward."
+
+        static func subtitle(_ completed: Int, _ total: Int) -> String {
+            "\(completed) of \(total) quests completed today."
+        }
+
+        static func reward(_ xp: Int) -> String {
+            "\(xp) XP"
+        }
+
+        static func progress(_ current: Int, _ target: Int) -> String {
+            "\(current)/\(target)"
+        }
+
+        static func categorySummary(_ completed: Int, _ total: Int) -> String {
+            "\(completed)/\(total) completed"
+        }
+
+        static func questTitle(_ kind: DailyQuestKind) -> String {
+            switch kind {
+            case .playThreeRounds:
+                "Play 3 rounds"
+            case .winOneRound:
+                "Win 1 round"
+            case .earnHundredXP:
+                "Earn 100 XP"
+            case .useOnePowerUp:
+                "Use 1 power-up"
+            case .guessTenCorrectLetters:
+                "Guess 10 correct letters"
+            case .winThreeRounds:
+                "Win 3 rounds"
+            case .earnTwoHundredXP:
+                "Earn 200 XP"
+            case .winOneMediumRound:
+                "Win 1 Medium round"
+            case .playTwoCategories:
+                "Play 2 categories"
+            case .finishRoundWithThreeLives:
+                "Finish a round with 3+ lives"
+            case .winOneHardRound:
+                "Win 1 Hard round"
+            case .solveRoundWithoutPowers:
+                "Win a round without powers"
+            case .playThreeCategories:
+                "Play 3 categories"
+            case .winTwoRoundsInARow:
+                "Win 2 rounds in a row"
+            }
         }
     }
 
@@ -160,21 +226,18 @@ enum Strings {
         static func roundLost(_ answer: String) -> String {
             "Round over. The word was \(answer)."
         }
+
+        static func dailyQuestRewardClaimed(_ reward: Int) -> String {
+            "Quest claimed. +\(reward) XP."
+        }
+
+        static func dailyQuestBonusClaimed(_ reward: Int) -> String {
+            "Daily set completed. +\(reward) XP."
+        }
     }
 
     enum Fallback {
         static let answer = "SWIFT"
         static let hint = "Apple development language"
     }
-
-    enum Face {
-        static let fullLives = "😎"
-        static let fiveLives = "🙂"
-        static let fourLives = "😐"
-        static let threeLives = "😬"
-        static let twoLives = "😵"
-        static let oneLife = "🥴"
-        static let noLives = "💀"
-    }
-
 }

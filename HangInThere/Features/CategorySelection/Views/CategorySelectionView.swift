@@ -10,6 +10,7 @@ import SwiftUI
 struct CategorySelectionView: View {
     @ObservedObject var viewModel: HangmanGameViewModel
     let onChooseCategory: (HangmanCategory) -> Void
+    let onOpenDailyQuests: () -> Void
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -85,11 +86,35 @@ struct CategorySelectionView: View {
                     AppStatBadge(title: state.revealTitle, value: state.revealValue)
                     AppStatBadge(title: state.freeGuessTitle, value: state.freeGuessValue)
                 }
+
+                VStack(alignment: .leading, spacing: AppTheme.Spacing.xSmall) {
+                    HStack {
+                        Text(state.dailyQuestsTitle)
+                            .font(AppTheme.Typography.section())
+                            .foregroundStyle(AppTheme.textPrimary)
+
+                        Spacer()
+
+                        Text(state.dailyQuestsSummary)
+                            .font(AppTheme.Typography.caption())
+                            .foregroundStyle(AppTheme.textSecondary)
+                    }
+
+                    AppButton(
+                        title: state.dailyQuestsButtonTitle,
+                        systemImage: Strings.Symbol.dailyQuestsButton,
+                        style: .ghost,
+                        layout: .horizontal,
+                        size: .compact,
+                        accessibilityIdentifier: AccessibilityID.CategorySelection.dailyQuestsButton,
+                        action: onOpenDailyQuests
+                    )
+                }
             }
         }
     }
 }
 
 #Preview {
-    CategorySelectionView(viewModel: HangmanGameViewModel(), onChooseCategory: { _ in })
+    CategorySelectionView(viewModel: HangmanGameViewModel(), onChooseCategory: { _ in }, onOpenDailyQuests: {})
 }

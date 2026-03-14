@@ -14,6 +14,7 @@ struct MainView: View {
     init(
         wordRepository: any WordRepository = InMemoryWordRepository.default,
         progressRepository: any ProgressRepository = UserDefaultsProgressRepository(),
+        dailyQuestRepository: any DailyQuestRepository = UserDefaultsDailyQuestRepository(),
         soundPlayer: (any SoundPlaying)? = nil,
         hapticPlayer: (any HapticPlaying)? = nil
     ) {
@@ -23,6 +24,7 @@ struct MainView: View {
             wrappedValue: AppViewModel(
                 wordRepository: wordRepository,
                 progressRepository: progressRepository,
+                dailyQuestRepository: dailyQuestRepository,
                 soundPlayer: resolvedSoundPlayer,
                 hapticPlayer: resolvedHapticPlayer
             )
@@ -36,6 +38,9 @@ struct MainView: View {
             phaseView
         }
         .animation(AppTheme.Motion.screenTransition, value: viewModel.phase)
+        .sheet(isPresented: $viewModel.isShowingDailyQuests) {
+            DailyQuestsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeDailyQuests)
+        }
     }
 
     @ViewBuilder
@@ -48,7 +53,11 @@ struct MainView: View {
                     removal: .opacity
                 ))
         case .categorySelection:
-            CategorySelectionView(viewModel: viewModel.gameViewModel, onChooseCategory: viewModel.chooseCategory)
+            CategorySelectionView(
+                viewModel: viewModel.gameViewModel,
+                onChooseCategory: viewModel.chooseCategory,
+                onOpenDailyQuests: viewModel.openDailyQuests
+            )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)

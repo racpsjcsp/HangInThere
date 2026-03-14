@@ -27,6 +27,9 @@ struct CategorySelectionViewState {
     let revealValue: String
     let freeGuessTitle: String
     let freeGuessValue: String
+    let dailyQuestsTitle: String
+    let dailyQuestsSummary: String
+    let dailyQuestsButtonTitle: String
     let categories: [CategoryCardViewState]
 }
 

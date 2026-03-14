@@ -448,7 +448,7 @@ private struct HangmanDrawingView: View {
                 if stage > 0 {
                     Circle()
                         .stroke(bodyColor, style: stroke)
-                        .frame(width: size.width * 0.14, height: size.width * 0.14)
+                        .frame(width: size.width * 0.12, height: size.width * 0.12)
                         .position(x: size.width * 0.67, y: size.height * 0.24)
                         .transition(.scale.combined(with: .opacity))
                 }

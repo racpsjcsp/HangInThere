@@ -12,6 +12,7 @@ import SwiftUI
 @MainActor
 final class AppViewModel: ObservableObject {
     @Published private(set) var phase: AppPhase = .splash
+    @Published var isShowingDailyQuests = false
     let gameViewModel: HangmanGameViewModel
     private let startAppFlowUseCase = StartAppFlowUseCase()
     private let chooseCategoryFlowUseCase = ChooseCategoryFlowUseCase()
@@ -22,6 +23,7 @@ final class AppViewModel: ObservableObject {
     init(
         wordRepository: any WordRepository,
         progressRepository: any ProgressRepository,
+        dailyQuestRepository: any DailyQuestRepository = InMemoryDailyQuestRepository(),
         soundPlayer: (any SoundPlaying)? = nil,
         hapticPlayer: (any HapticPlaying)? = nil
     ) {
@@ -30,9 +32,19 @@ final class AppViewModel: ObservableObject {
         self.gameViewModel = HangmanGameViewModel(
             wordRepository: wordRepository,
             progressRepository: progressRepository,
+            dailyQuestRepository: dailyQuestRepository,
             soundPlayer: resolvedSoundPlayer,
             hapticPlayer: resolvedHapticPlayer
         )
+    }
+
+    func openDailyQuests() {
+        gameViewModel.refreshDailyQuests()
+        isShowingDailyQuests = true
+    }
+
+    func closeDailyQuests() {
+        isShowingDailyQuests = false
     }
 
     func start() {

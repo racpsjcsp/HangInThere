@@ -29,9 +29,14 @@ struct CategorySelectionView: View {
                         } label: {
                             AppCard {
                                 VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
-                                    Image(systemName: category.symbol)
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundStyle(category.tint)
+                                    HStack {
+                                        Image(category.imageName)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 42, height: 42)
+                                        Spacer()
+                                    }
+                                    .frame(height: 42)
 
                                     Text(category.title)
                                         .font(AppTheme.Typography.section())
@@ -41,8 +46,12 @@ struct CategorySelectionView: View {
                                         .font(AppTheme.Typography.caption())
                                         .foregroundStyle(AppTheme.textSecondary)
                                         .multilineTextAlignment(.leading)
+                                        .lineLimit(2)
+                                        .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+
+                                    Spacer(minLength: 0)
                                 }
-                                .frame(maxWidth: .infinity, minHeight: 130, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 148, maxHeight: 148, alignment: .leading)
                             }
                         }
                         .buttonStyle(.plain)

@@ -8,6 +8,7 @@
 import SwiftUI
 
 enum AppTheme {
+    static let topStatusBarFill = Color(red: 0.08, green: 0.11, blue: 0.20)
     static let background = LinearGradient(
         colors: [Color(red: 0.08, green: 0.11, blue: 0.20), Color(red: 0.13, green: 0.23, blue: 0.28)],
         startPoint: .topLeading,

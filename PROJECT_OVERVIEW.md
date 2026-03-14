@@ -36,6 +36,7 @@ The project is already structured to support growth beyond a small prototype.
 - round summary state for win/loss
 - persistent player progress with `UserDefaults`
 - deterministic setup for UI tests
+- custom visual assets for splash, categories, difficulty badges, power-ups, and the hangman illustration
 
 ## Core Gameplay Rules
 
@@ -262,6 +263,30 @@ The app uses shared design-system components and theme values:
 - `AppPill`
 
 This keeps the UI style more consistent and avoids repeated layout and styling code.
+
+## Recent Visual Refresh
+
+Since the last committed baseline, the project received a larger custom-art pass:
+
+- the splash screen now uses a custom illustrated background, emblem, and logo instead of text-only branding
+- category selection cards now use category-specific artwork and aligned card heights
+- difficulty selection now uses custom badge artwork for all three levels
+- gameplay uses custom power-up artwork and a custom hangman illustration
+- the splash screen uses splash-specific readability treatment, with darker text over a lighter translucent feature panel
+
+The root view also now handles the top safe-area differently by phase:
+
+- the splash screen is allowed to read as a true full-screen background
+- the other scrollable screens still protect the status-bar area from content exposure during bounce
+
+## Asset Note
+
+The project now includes custom category, difficulty, power-up, and hangman artwork in `Assets.xcassets`.
+
+Current note for future cleanup:
+
+- some artwork still uses UI-side sizing adjustments to compensate for uneven visual padding inside the source PNGs
+- this should be normalized in the source asset files later so the app can remove those scale tweaks and rely on uniform artwork bounds instead
 
 ## Strings and Constants
 

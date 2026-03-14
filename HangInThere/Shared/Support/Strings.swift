@@ -8,6 +8,24 @@
 import Foundation
 
 enum Strings {
+    enum Asset {
+        static let animalsCategory = "animalCategoryLion"
+        static let geographyCategory = "geographyCategory"
+        static let foodsCategory = "foodsCategory"
+        static let objectsCategory = "objectsCategory"
+
+        static let easyMode = "easyMode"
+        static let mediumMode = "mediumMode"
+        static let hardMode = "hardMode"
+
+        static let revealPower = "powerUp1"
+        static let freeGuessPower = "powerUp10"
+
+        static let splashLogo = "hangInThere1"
+        static let splashEmblem = "hangInThereEmblem"
+        static let splashBackground = "splashBackground4"
+    }
+
     enum Symbol {
         static let animals = "pawprint.fill"
         static let geography = "globe.americas.fill"

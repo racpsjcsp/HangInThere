@@ -44,6 +44,15 @@ enum HangmanCategory: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var assetName: String {
+        switch self {
+        case .animals: Strings.Asset.animalsCategory
+        case .geography: Strings.Asset.geographyCategory
+        case .foods: Strings.Asset.foodsCategory
+        case .objects: Strings.Asset.objectsCategory
+        }
+    }
+
     var tint: Color {
         switch self {
         case .animals: AppTheme.secondary
@@ -91,6 +100,13 @@ enum PowerUp: String, CaseIterable, Identifiable {
         case .freeGuess: Strings.Symbol.freeGuessPower
         }
     }
+
+    var assetName: String {
+        switch self {
+        case .revealLetter: Strings.Asset.revealPower
+        case .freeGuess: Strings.Asset.freeGuessPower
+        }
+    }
 }
 
 enum GameLevel: String, CaseIterable, Identifiable, Codable {
@@ -124,11 +140,27 @@ enum GameLevel: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    var assetName: String {
+        switch self {
+        case .easy: Strings.Asset.easyMode
+        case .medium: Strings.Asset.mediumMode
+        case .hard: Strings.Asset.hardMode
+        }
+    }
+
     var tint: Color {
         switch self {
         case .easy: AppTheme.secondary
         case .medium: AppTheme.warning
         case .hard: AppTheme.accent
+        }
+    }
+
+    var assetScale: CGFloat {
+        switch self {
+        case .easy: 1.3
+        case .medium: 1.1
+        case .hard: 1.0
         }
     }
 }

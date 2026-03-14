@@ -130,7 +130,6 @@ struct GameScreenView: View {
 
     private func difficultyBadge(state: GameViewState) -> some View {
         HStack(spacing: AppTheme.Spacing.xxxSmall) {
-            Image(systemName: state.gameLevelSymbol)
             Text(state.gameLevelTitle)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -148,14 +147,14 @@ struct GameScreenView: View {
 
     private func compactPill(text: String, color: Color) -> some View {
         Text(text)
-            .font(AppTheme.Typography.caption())
-            .foregroundStyle(Color.black.opacity(0.78))
             .lineLimit(1)
             .minimumScaleFactor(0.9)
-            .padding(.horizontal, AppTheme.Spacing.xxxSmall)
-            .padding(.vertical, 5)
-            .background(color, in: Capsule())
-            .fixedSize(horizontal: true, vertical: false)
+        .font(AppTheme.Typography.caption())
+        .foregroundStyle(Color.black.opacity(0.78))
+        .padding(.horizontal, AppTheme.Spacing.xxxSmall)
+        .padding(.vertical, 5)
+        .background(color, in: Capsule())
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private func puzzleCard(state: GameViewState) -> some View {
@@ -237,7 +236,8 @@ struct GameScreenView: View {
                 HStack(spacing: AppTheme.Spacing.small) {
                     AppButton(
                         title: state.revealButtonTitle,
-                        systemImage: state.revealButtonSymbol,
+                        systemImage: nil,
+                        assetImage: state.revealButtonImageName,
                         style: .powerReveal,
                         layout: .vertical,
                         size: .compact,
@@ -248,7 +248,8 @@ struct GameScreenView: View {
 
                     AppButton(
                         title: state.freeGuessButtonTitle,
-                        systemImage: state.freeGuessButtonSymbol,
+                        systemImage: nil,
+                        assetImage: state.freeGuessButtonImageName,
                         style: .powerFreeGuess,
                         layout: .vertical,
                         size: .compact,

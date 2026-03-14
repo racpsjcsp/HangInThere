@@ -32,15 +32,32 @@ struct MainView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppTheme.background.ignoresSafeArea()
+        GeometryReader { proxy in
+            ZStack(alignment: .top) {
+                AppTheme.background.ignoresSafeArea()
 
-            phaseView
+                phaseView
+
+                if viewModel.phase != .splash {
+                    topSafeAreaCover(height: proxy.safeAreaInsets.top)
+                        .frame(height: proxy.safeAreaInsets.top)
+                        .clipped()
+                        .ignoresSafeArea(edges: .top)
+                        .allowsHitTesting(false)
+                }
+            }
         }
         .animation(AppTheme.Motion.screenTransition, value: viewModel.phase)
+        .preferredColorScheme(viewModel.phase == .splash ? .light : .dark)
         .sheet(isPresented: $viewModel.isShowingDailyQuests) {
             DailyQuestsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeDailyQuests)
         }
+    }
+
+    @ViewBuilder
+    private func topSafeAreaCover(height: CGFloat) -> some View {
+        AppTheme.topStatusBarFill
+            .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder

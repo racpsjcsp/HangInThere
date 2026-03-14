@@ -98,7 +98,7 @@ final class HangmanGameViewModel: ObservableObject {
                     category: category,
                     title: category.title,
                     description: description(for: category),
-                    symbol: category.symbol,
+                    imageName: category.assetName,
                     tint: category.tint
                 )
             }
@@ -151,9 +151,10 @@ final class HangmanGameViewModel: ObservableObject {
 
         return GameViewState(
             categoryTitle: puzzle.category.title,
+            categoryImageName: puzzle.category.assetName,
             categoryTint: puzzle.category.tint,
             gameLevelTitle: selectedLevel.title,
-            gameLevelSymbol: selectedLevel.symbol,
+            gameLevelImageName: selectedLevel.assetName,
             gameLevelTint: selectedLevel.tint,
             categoriesButtonTitle: Strings.Game.categories,
             playerLevelText: Strings.Selection.level(progress.level),
@@ -169,9 +170,9 @@ final class HangmanGameViewModel: ObservableObject {
             freeGuessActiveText: Strings.Game.freeGuessActive,
             message: message,
             revealButtonTitle: Strings.Game.revealButton(progress.revealLetterCharges),
-            revealButtonSymbol: PowerUp.revealLetter.symbol,
+            revealButtonImageName: PowerUp.revealLetter.assetName,
             freeGuessButtonTitle: Strings.Game.freeGuessButton(progress.freeGuessCharges),
-            freeGuessButtonSymbol: PowerUp.freeGuess.symbol,
+            freeGuessButtonImageName: PowerUp.freeGuess.assetName,
             keyboardRows: keyboardRows,
             guessedLetters: Set(puzzle.guessedLetters.map { String($0) }),
             isPlaying: puzzle.status == .playing,
@@ -186,6 +187,7 @@ final class HangmanGameViewModel: ObservableObject {
             title: Strings.LevelSelection.title,
             subtitle: Strings.LevelSelection.subtitle(selectedCategory.title),
             categoryTitle: selectedCategory.title,
+            categoryImageName: selectedCategory.assetName,
             categoryTint: selectedCategory.tint,
             backButtonTitle: Strings.LevelSelection.back,
             levels: GameLevel.allCases.map { level in
@@ -193,7 +195,8 @@ final class HangmanGameViewModel: ObservableObject {
                     level: level,
                     title: level.title,
                     description: level.description,
-                    symbol: level.symbol,
+                    imageName: level.assetName,
+                    imageScale: level.assetScale,
                     tint: level.tint
                 )
             }

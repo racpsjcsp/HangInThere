@@ -22,6 +22,12 @@ For the full internal project documentation, see [`PROJECT_OVERVIEW.md`](./PROJE
   - Reveal Letter
   - Free Guess
 - persistent local progress with `UserDefaults`
+- custom visual asset set for:
+  - splash branding
+  - category artwork
+  - difficulty badges
+  - power-up artwork
+  - hangman gameplay illustration
 - unit tests and UI tests
 
 ## App Flow
@@ -107,6 +113,14 @@ HangInThereApp
 - UI tests run with deterministic data for stability.
 - SwiftUI accessibility can expose custom composed views under different element types, so UI tests prefer stable accessibility identifiers and, when needed, `descendants(matching: .any)` instead of assuming `buttons`, `staticTexts`, or `otherElements`.
 
+## Recent Work
+
+- The splash screen was redesigned around custom background, emblem, and logo artwork instead of text-only branding.
+- Category selection now uses illustrated category cards with normalized card heights.
+- Difficulty selection now uses custom badge artwork for `Easy`, `Medium`, and `Hard`.
+- Gameplay now uses custom power-up artwork and a custom hangman illustration instead of only system symbols and native-only placeholders.
+- Root safe-area handling was adjusted so the splash remains visually full-screen while scrollable screens do not expose content under the status bar.
+
 ## Future Direction
 
 The project is already structured to support future features such as:
@@ -115,6 +129,7 @@ The project is already structured to support future features such as:
 - player profiles
 - remote data sources
 - more categories and modes
+- source-asset normalization, so category and difficulty artwork can share consistent visual bounds without UI-side scale adjustments
 
 ## Documentation
 

@@ -40,10 +40,6 @@ struct GameLevelSelectionView: View {
                 .foregroundStyle(AppTheme.textPrimary)
                 .accessibilityIdentifier(AccessibilityID.LevelSelection.title)
 
-            Text(state.subtitle)
-                .font(AppTheme.Typography.body())
-                .foregroundStyle(AppTheme.textSecondary)
-
             AppPill(text: state.categoryTitle, color: state.categoryTint)
         }
     }
@@ -56,10 +52,11 @@ struct GameLevelSelectionView: View {
                 } label: {
                     AppCard {
                         HStack(spacing: AppTheme.Spacing.medium) {
-                            Image(systemName: level.symbol)
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundStyle(level.tint)
-                                .frame(width: 34)
+                            Image(level.imageName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 66, height: 66)
+                                .scaleEffect(level.imageScale)
 
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.xxxSmall) {
                                 Text(level.title)

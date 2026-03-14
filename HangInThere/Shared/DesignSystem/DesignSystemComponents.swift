@@ -47,6 +47,7 @@ struct AppButton: View {
 
     let title: String
     let systemImage: String?
+    let assetImage: String?
     let style: Style
     let layout: Layout
     let size: Size
@@ -56,6 +57,7 @@ struct AppButton: View {
     init(
         title: String,
         systemImage: String?,
+        assetImage: String? = nil,
         style: Style,
         layout: Layout,
         size: Size = .regular,
@@ -64,6 +66,7 @@ struct AppButton: View {
     ) {
         self.title = title
         self.systemImage = systemImage
+        self.assetImage = assetImage
         self.style = style
         self.layout = layout
         self.size = size
@@ -110,7 +113,15 @@ struct AppButton: View {
 
     @ViewBuilder
     private var icon: some View {
-        if let systemImage {
+        if let assetImage {
+            Image(assetImage)
+                .resizable()
+                .scaledToFit()
+                .frame(
+                    width: layout == .horizontal ? (size == .compact ? 18 : 20) : (size == .compact ? 26 : 30),
+                    height: layout == .horizontal ? (size == .compact ? 18 : 20) : (size == .compact ? 26 : 30)
+                )
+        } else if let systemImage {
             Image(systemName: systemImage)
                 .font(iconFont)
                 .frame(width: layout == .horizontal ? 14 : nil)

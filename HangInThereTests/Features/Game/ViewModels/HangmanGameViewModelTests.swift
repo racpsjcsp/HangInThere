@@ -87,6 +87,21 @@ struct HangmanGameViewModelTests {
         #expect(state?.levels.map(\.level) == GameLevel.allCases)
     }
 
+    @Test func categorySelectionViewStateUsesCategoryAssets() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Level", hint: "Mode", difficulty: 2)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        let categories = await MainActor.run { viewModel.categorySelectionViewState.categories }
+
+        #expect(categories.count == HangmanCategory.allCases.count)
+        #expect(categories.map(\.category) == HangmanCategory.allCases)
+        #expect(categories.map(\.imageName) == HangmanCategory.allCases.map(\.assetName))
+    }
+
     @Test func startRoundPublishesSelectedLevelInGameViewState() async throws {
         let viewModel = await MainActor.run {
             HangmanGameViewModel(
@@ -104,7 +119,37 @@ struct HangmanGameViewModelTests {
 
         #expect(level == .hard)
         #expect(state?.gameLevelTitle == Strings.Mode.hardTitle)
-        #expect(state?.gameLevelSymbol == GameLevel.hard.symbol)
+        #expect(state?.gameLevelImageName == GameLevel.hard.assetName)
+    }
+
+    @Test func levelAndGameViewStateUseExpectedArtworkMappings() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Caracal", hint: "Wild cat", difficulty: 2)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.selectCategory(.animals)
+        }
+
+        let levelState = await MainActor.run { viewModel.levelSelectionViewState }
+
+        #expect(levelState?.categoryImageName == HangmanCategory.animals.assetName)
+        #expect(levelState?.levels.map(\.imageName) == GameLevel.allCases.map(\.assetName))
+        #expect(levelState?.levels.map(\.imageScale) == GameLevel.allCases.map(\.assetScale))
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .hard)
+        }
+
+        let gameState = await MainActor.run { viewModel.gameViewState }
+
+        #expect(gameState?.categoryImageName == HangmanCategory.animals.assetName)
+        #expect(gameState?.gameLevelImageName == GameLevel.hard.assetName)
+        #expect(gameState?.revealButtonImageName == PowerUp.revealLetter.assetName)
+        #expect(gameState?.freeGuessButtonImageName == PowerUp.freeGuess.assetName)
     }
 
     @Test func showCategorySelectionClearsSelectedDifficulty() async throws {

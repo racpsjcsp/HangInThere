@@ -65,7 +65,7 @@ struct GameViewState {
     let gameLevelTint: Color
     let categoriesButtonTitle: String
     let playerLevelText: String
-    let face: String
+    let hangmanStage: Int
     let maskedAnswer: String
     let hintTitle: String
     let hintText: String

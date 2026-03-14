@@ -12,6 +12,7 @@ struct HangInThereApp: App {
     private let wordRepository: any WordRepository
     private let progressRepository: any ProgressRepository
     private let soundPlayer: any SoundPlaying
+    private let hapticPlayer: any HapticPlaying
 
     init() {
         if ProcessInfo.processInfo.arguments.contains("UITesting") {
@@ -27,10 +28,12 @@ struct HangInThereApp: App {
             )
             progressRepository = InMemoryProgressRepository()
             soundPlayer = SilentSoundPlayer.shared
+            hapticPlayer = SilentHapticPlayer.shared
         } else {
             wordRepository = InMemoryWordRepository.default
             progressRepository = UserDefaultsProgressRepository()
             soundPlayer = SoundEffectPlayer.shared
+            hapticPlayer = HapticFeedbackPlayer.shared
         }
     }
 
@@ -39,7 +42,8 @@ struct HangInThereApp: App {
             MainView(
                 wordRepository: wordRepository,
                 progressRepository: progressRepository,
-                soundPlayer: soundPlayer
+                soundPlayer: soundPlayer,
+                hapticPlayer: hapticPlayer
             )
         }
     }

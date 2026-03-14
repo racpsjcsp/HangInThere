@@ -22,6 +22,7 @@ final class HangmanGameViewModel: ObservableObject {
     private let startRoundUseCase: StartRoundUseCase
     private let progressRepository: any ProgressRepository
     private let soundPlayer: any SoundPlaying
+    private let hapticPlayer: any HapticPlaying
     private let guessLetterUseCase = GuessLetterUseCase()
     private let usePowerUpUseCase = UsePowerUpUseCase()
     private let resolveRoundStateUseCase = ResolveRoundStateUseCase()
@@ -30,19 +31,23 @@ final class HangmanGameViewModel: ObservableObject {
         self.init(
             wordRepository: InMemoryWordRepository.default,
             progressRepository: UserDefaultsProgressRepository(),
-            soundPlayer: SoundEffectPlayer.shared
+            soundPlayer: SoundEffectPlayer.shared,
+            hapticPlayer: HapticFeedbackPlayer.shared
         )
     }
 
     init(
         wordRepository: any WordRepository,
         progressRepository: any ProgressRepository,
-        soundPlayer: (any SoundPlaying)? = nil
+        soundPlayer: (any SoundPlaying)? = nil,
+        hapticPlayer: (any HapticPlaying)? = nil
     ) {
         let resolvedSoundPlayer = soundPlayer ?? SilentSoundPlayer.shared
+        let resolvedHapticPlayer = hapticPlayer ?? SilentHapticPlayer.shared
         self.startRoundUseCase = StartRoundUseCase(wordRepository: wordRepository)
         self.progressRepository = progressRepository
         self.soundPlayer = resolvedSoundPlayer
+        self.hapticPlayer = resolvedHapticPlayer
         self.progress = progressRepository.loadProgress()
     }
 
@@ -104,7 +109,7 @@ final class HangmanGameViewModel: ObservableObject {
             gameLevelTint: selectedLevel.tint,
             categoriesButtonTitle: Strings.Game.categories,
             playerLevelText: Strings.Selection.level(progress.level),
-            face: face(for: puzzle.remainingLives),
+            hangmanStage: puzzle.wrongGuesses,
             maskedAnswer: puzzle.maskedAnswer,
             hintTitle: Strings.Game.hint,
             hintText: puzzle.hint,
@@ -187,6 +192,7 @@ final class HangmanGameViewModel: ObservableObject {
 
     func toggleSound() {
         soundPlayer.isSoundEnabled.toggle()
+        hapticPlayer.toggle()
         objectWillChange.send()
     }
 
@@ -310,18 +316,6 @@ final class HangmanGameViewModel: ObservableObject {
             Strings.Category.foodsDescription
         case .objects:
             Strings.Category.objectsDescription
-        }
-    }
-
-    private func face(for remainingLives: Int) -> String {
-        switch remainingLives {
-        case 6: Strings.Face.fullLives
-        case 5: Strings.Face.fiveLives
-        case 4: Strings.Face.fourLives
-        case 3: Strings.Face.threeLives
-        case 2: Strings.Face.twoLives
-        case 1: Strings.Face.oneLife
-        default: Strings.Face.noLives
         }
     }
 

@@ -14,14 +14,17 @@ struct MainView: View {
     init(
         wordRepository: any WordRepository = InMemoryWordRepository.default,
         progressRepository: any ProgressRepository = UserDefaultsProgressRepository(),
-        soundPlayer: (any SoundPlaying)? = nil
+        soundPlayer: (any SoundPlaying)? = nil,
+        hapticPlayer: (any HapticPlaying)? = nil
     ) {
         let resolvedSoundPlayer = soundPlayer ?? SoundEffectPlayer.shared
+        let resolvedHapticPlayer = hapticPlayer ?? HapticFeedbackPlayer.shared
         _viewModel = StateObject(
             wrappedValue: AppViewModel(
                 wordRepository: wordRepository,
                 progressRepository: progressRepository,
-                soundPlayer: resolvedSoundPlayer
+                soundPlayer: resolvedSoundPlayer,
+                hapticPlayer: resolvedHapticPlayer
             )
         )
     }

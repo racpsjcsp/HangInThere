@@ -90,11 +90,8 @@ struct GameScreenView: View {
 
             Spacer(minLength: AppTheme.Spacing.xxxSmall)
 
-            HStack(spacing: AppTheme.Spacing.xxSmall) {
-                soundToggleButton
-                categoriesButton(state: state)
-            }
-            .layoutPriority(1)
+            categoriesButton(state: state)
+                .layoutPriority(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -169,8 +166,9 @@ struct GameScreenView: View {
                         .font(AppTheme.Typography.caption())
                         .foregroundStyle(AppTheme.textMuted)
 
-                    Text(state.face)
-                        .font(.system(size: 54))
+                    HangmanDrawingView(stage: state.hangmanStage)
+                        .frame(height: 126)
+                        .padding(.horizontal, AppTheme.Spacing.medium)
 
                     Text(state.maskedAnswer)
                         .font(AppTheme.Typography.letter())
@@ -205,6 +203,10 @@ struct GameScreenView: View {
                     .foregroundStyle(AppTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }
+        }
+        .overlay(alignment: .topTrailing) {
+            soundToggleButton
+                .padding(AppTheme.Spacing.small)
         }
         .scaleEffect(correctPulse ? 1.02 : 1)
         .modifier(ShakeEffect(animatableData: shakeTrigger))
@@ -261,30 +263,45 @@ struct GameScreenView: View {
 
     private func keyboard(state: GameViewState) -> some View {
         AppCard {
-            VStack(spacing: AppTheme.Spacing.small) {
-                ForEach(state.keyboardRows.indices, id: \.self) { rowIndex in
-                    HStack(spacing: AppTheme.Spacing.xxxSmall) {
-                        ForEach(state.keyboardRows[rowIndex], id: \.self) { letter in
-                            let wasGuessed = state.guessedLetters.contains(letter)
-                            Button {
-                                viewModel.guess(letter)
-                            } label: {
-                                Text(letter)
-                                    .font(AppTheme.Typography.body())
-                                    .foregroundStyle(wasGuessed ? AppTheme.textMuted : AppTheme.textPrimary)
-                                    .frame(maxWidth: .infinity, minHeight: 42)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(wasGuessed ? Color.white.opacity(0.06) : Color.white.opacity(0.12))
-                                    )
+            GeometryReader { proxy in
+                let columnCount = 10
+                let keySpacing = AppTheme.Spacing.xxxSmall
+                let rowSpacing = AppTheme.Spacing.small
+                let keyHeight: CGFloat = 42
+                let totalSpacing = CGFloat(columnCount - 1) * keySpacing
+                let keyWidth = (proxy.size.width - totalSpacing) / CGFloat(columnCount)
+
+                VStack(spacing: rowSpacing) {
+                    ForEach(state.keyboardRows.indices, id: \.self) { rowIndex in
+                        let row = state.keyboardRows[rowIndex]
+                        let rowInset = CGFloat(columnCount - row.count) * (keyWidth + keySpacing) / 2
+
+                        HStack(spacing: keySpacing) {
+                            ForEach(row, id: \.self) { letter in
+                                let wasGuessed = state.guessedLetters.contains(letter)
+                                Button {
+                                    viewModel.guess(letter)
+                                } label: {
+                                    Text(letter)
+                                        .font(AppTheme.Typography.body())
+                                        .foregroundStyle(wasGuessed ? AppTheme.textMuted : AppTheme.textPrimary)
+                                        .frame(width: keyWidth, height: keyHeight)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                .fill(wasGuessed ? Color.white.opacity(0.06) : Color.white.opacity(0.12))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(wasGuessed || !state.isPlaying)
+                                .accessibilityIdentifier(AccessibilityID.Game.keyboardButton(letter))
                             }
-                            .buttonStyle(.plain)
-                            .disabled(wasGuessed || !state.isPlaying)
-                            .accessibilityIdentifier(AccessibilityID.Game.keyboardButton(letter))
                         }
+                        .padding(.horizontal, rowInset)
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
+            .frame(height: 142)
         }
     }
 
@@ -410,6 +427,106 @@ private struct ShakeEffect: GeometryEffect {
                 y: 0
             )
         )
+    }
+}
+
+private struct HangmanDrawingView: View {
+    let stage: Int
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let lineWidth = max(3, min(size.width, size.height) * 0.028)
+            let stroke = StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+            let frameColor = Color.white.opacity(0.82)
+            let bodyColor = AppTheme.accent.opacity(0.96)
+
+            ZStack {
+                HangmanFrameShape()
+                    .stroke(frameColor, style: stroke)
+
+                if stage > 0 {
+                    Circle()
+                        .stroke(bodyColor, style: stroke)
+                        .frame(width: size.width * 0.14, height: size.width * 0.14)
+                        .position(x: size.width * 0.67, y: size.height * 0.24)
+                        .transition(.scale.combined(with: .opacity))
+                }
+
+                if stage > 1 {
+                    Path { path in
+                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.31))
+                        path.addLine(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
+                    }
+                    .stroke(bodyColor, style: stroke)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
+
+                if stage > 2 {
+                    Path { path in
+                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.38))
+                        path.addLine(to: CGPoint(x: size.width * 0.57, y: size.height * 0.48))
+                    }
+                    .stroke(bodyColor, style: stroke)
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                }
+
+                if stage > 3 {
+                    Path { path in
+                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.38))
+                        path.addLine(to: CGPoint(x: size.width * 0.77, y: size.height * 0.48))
+                    }
+                    .stroke(bodyColor, style: stroke)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
+
+                if stage > 4 {
+                    Path { path in
+                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
+                        path.addLine(to: CGPoint(x: size.width * 0.58, y: size.height * 0.74))
+                    }
+                    .stroke(bodyColor, style: stroke)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+
+                if stage > 5 {
+                    Path { path in
+                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
+                        path.addLine(to: CGPoint(x: size.width * 0.76, y: size.height * 0.74))
+                    }
+                    .stroke(bodyColor, style: stroke)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .drawingGroup()
+        .animation(AppTheme.Motion.summaryReveal, value: stage)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Hangman stage \(stage)")
+    }
+}
+
+private struct HangmanFrameShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.width * 0.18, y: rect.height * 0.86))
+        path.addLine(to: CGPoint(x: rect.width * 0.82, y: rect.height * 0.86))
+
+        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.86))
+        path.addLine(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.08))
+
+        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.08))
+        path.addLine(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.08))
+
+        path.move(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.08))
+        path.addLine(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.13))
+
+        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.22))
+        path.addLine(to: CGPoint(x: rect.width * 0.43, y: rect.height * 0.08))
+
+        return path
     }
 }
 

@@ -22,13 +22,16 @@ final class AppViewModel: ObservableObject {
     init(
         wordRepository: any WordRepository,
         progressRepository: any ProgressRepository,
-        soundPlayer: (any SoundPlaying)? = nil
+        soundPlayer: (any SoundPlaying)? = nil,
+        hapticPlayer: (any HapticPlaying)? = nil
     ) {
         let resolvedSoundPlayer = soundPlayer ?? SilentSoundPlayer.shared
+        let resolvedHapticPlayer = hapticPlayer ?? SilentHapticPlayer.shared
         self.gameViewModel = HangmanGameViewModel(
             wordRepository: wordRepository,
             progressRepository: progressRepository,
-            soundPlayer: resolvedSoundPlayer
+            soundPlayer: resolvedSoundPlayer,
+            hapticPlayer: resolvedHapticPlayer
         )
     }
 

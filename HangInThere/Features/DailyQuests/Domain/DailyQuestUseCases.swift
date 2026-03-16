@@ -14,14 +14,17 @@ struct GenerateDailyQuestStateUseCase {
         self.calendar = calendar
     }
 
-    func execute(for date: Date) -> DailyQuestState {
-        let easyPool: [DailyQuestKind] = [
+    func execute(for date: Date, progress: PlayerProgress = PlayerProgress()) -> DailyQuestState {
+        var easyPool: [DailyQuestKind] = [
             .playThreeRounds,
             .winOneRound,
             .earnHundredXP,
             .useOnePowerUp,
             .guessTenCorrectLetters
         ]
+        if progress.level < PlayerProgress.powerUnlockLevel {
+            easyPool.removeAll { $0 == .useOnePowerUp }
+        }
         let mediumPool: [DailyQuestKind] = [
             .winThreeRounds,
             .earnTwoHundredXP,
@@ -76,16 +79,16 @@ struct RefreshDailyQuestStateUseCase {
         self.generator = GenerateDailyQuestStateUseCase(calendar: calendar)
     }
 
-    func execute(existingState: DailyQuestState?, on date: Date) -> DailyQuestState {
+    func execute(existingState: DailyQuestState?, on date: Date, progress: PlayerProgress = PlayerProgress()) -> DailyQuestState {
         guard let existingState else {
-            return generator.execute(for: date)
+            return generator.execute(for: date, progress: progress)
         }
 
         if calendar.isDate(existingState.generatedOn, inSameDayAs: date) {
             return existingState
         }
 
-        return generator.execute(for: date)
+        return generator.execute(for: date, progress: progress)
     }
 }
 
@@ -202,4 +205,3 @@ struct DailyQuestClaimResult {
     let rewardXP: Int
     let levelsGained: Int
 }
-

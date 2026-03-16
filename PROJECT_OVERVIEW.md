@@ -34,11 +34,14 @@ The project is already structured to support growth beyond a small prototype.
   - Reveal Letter
   - Free Guess
 - daily quests with claimable XP rewards and Sunday bonus scaling
+- daily quest generation that avoids impossible power-up quests before power-ups are unlocked
 - round summary state for win/loss
 - persistent player progress with `UserDefaults`
 - persistent local daily quest state with `UserDefaults`
 - in-progress round resume per category and per difficulty
+- level selection resume indicator for saved rounds
 - bundled sound effects and haptic feedback
+- settings screen for sound and haptic controls
 - deterministic setup for UI tests
 - custom visual assets for splash, categories, difficulty badges, power-ups, and the hangman illustration
 
@@ -57,6 +60,7 @@ The project is already structured to support growth beyond a small prototype.
   - `lost` when mistakes reach the maximum
 - Winning grants XP.
 - Daily quests can grant additional XP rewards when claimed.
+- Daily quests do not generate `Use 1 power-up` before the player reaches the power-up unlock milestone.
 - The player starts with no power charges.
 - Reaching level 3 unlocks 1 `Reveal Letter` and 1 `Free Guess`.
 - Later milestone levels grant capped refills:
@@ -131,6 +135,7 @@ The project follows a feature-oriented MVVM structure with additional domain and
 - `HangInThere/Features/Splash/Views`
 - `HangInThere/Features/CategorySelection/Views`
 - `HangInThere/Features/GameLevelSelection/Views`
+- `HangInThere/Features/Settings/Views`
 - `HangInThere/Features/Game/ViewModels`
 - `HangInThere/Features/Game/Views`
 - `HangInThere/Features/Game/Presentation`
@@ -189,7 +194,7 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
 - `GameLevel`
   - difficulty mode metadata
 - `PlayerProgress`
-  - level, experience, level-threshold progression, and capped power-up charge rewards
+  - level, experience, level-threshold progression, capped power-up charge rewards, and next reward preview
 - `HangmanPuzzle`
   - current round state and game rules
 - `StartRoundUseCase`
@@ -230,7 +235,7 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
 
 - `HangmanGameViewModel`
   - gameplay view model
-  - owns progress, selected category, selected level, round state, daily quests, and feedback message
+  - owns progress, selected category, selected level, round state, daily quests, settings state, and feedback message
   - exposes view state objects for screens
 - `ViewStates.swift`
   - presentation-specific state models for rendering

@@ -48,8 +48,12 @@ enum Strings {
         static let soundOn = "speaker.wave.2.fill"
         static let soundOff = "speaker.slash.fill"
         static let dailyQuestsButton = "calendar.badge.clock"
+        static let settingsButton = "gearshape.fill"
+        static let settingsSound = "speaker.wave.2.fill"
+        static let settingsHaptics = "iphone.radiowaves.left.and.right"
         static let dailyQuestsSundayBonus = "sun.max.fill"
         static let levelSelectionBackButton = "arrow.left.circle"
+        static let levelResume = "arrow.clockwise.circle.fill"
     }
 
     enum Category {
@@ -87,10 +91,24 @@ enum Strings {
         static let freeGuessStat = "Free Guess"
         static let dailyQuestsTitle = "Daily Quests"
         static let openDailyQuests = "Open Daily Quests"
+        static let openSettings = "Settings"
 
         static func level(_ value: Int) -> String {
             "Level \(value)"
         }
+
+        static func nextReward(_ detail: String) -> String {
+            "Next reward: \(detail)"
+        }
+    }
+
+    enum Settings {
+        static let title = "Settings"
+        static let subtitle = "Adjust feedback and review how progress is saved."
+        static let soundEffects = "Sound Effects"
+        static let haptics = "Haptics"
+        static let localStorageNote = "Progress is currently saved locally on this device."
+        static let done = "Done"
     }
 
     enum DailyQuests {
@@ -104,6 +122,7 @@ enum Strings {
         static let completionBonusTitle = "Complete All Daily Quests"
         static let completionBonusSubtitle = "Finish all three quests to unlock the bonus reward."
         static let playerProgressTitle = "Current Progress"
+        static let resetNote = "Quests reset daily."
 
         static func subtitle(_ completed: Int, _ total: Int) -> String {
             "\(completed) of \(total) quests completed today."
@@ -162,6 +181,7 @@ enum Strings {
     enum LevelSelection {
         static let title = "Choose the challenge"
         static let back = "Back to Categories"
+        static let resume = "Resume"
 
         static func subtitle(_ category: String) -> String {
             "Category selected: \(category). Pick your difficulty."
@@ -236,6 +256,17 @@ enum Strings {
 
             return rewards
         }
+
+        static func nextPowerReward(level: Int, revealCharges: Int, freeGuessCharges: Int) -> String {
+            let rewards = [
+                revealCharges > 0 ? "+\(revealCharges) Reveal" : nil,
+                freeGuessCharges > 0 ? "+\(freeGuessCharges) Free Guess" : nil
+            ]
+            .compactMap { $0 }
+            .joined(separator: " • ")
+
+            return "Level \(level) • \(rewards)"
+        }
     }
 
     enum Message {
@@ -277,6 +308,10 @@ enum Strings {
 
         static func dailyQuestBonusClaimed(_ reward: Int) -> String {
             "Daily set completed. +\(reward) XP."
+        }
+
+        static func resumedRound(_ level: String) -> String {
+            "Resumed your \(level) round."
         }
     }
 

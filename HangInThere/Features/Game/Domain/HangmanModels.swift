@@ -231,6 +231,33 @@ struct PlayerProgress: Equatable, Codable {
             partial + experienceRequired(for: current)
         }
     }
+
+    var nextPowerReward: (level: Int, revealCharges: Int, freeGuessCharges: Int) {
+        var nextLevel = level + 1
+
+        while true {
+            let reward = Self.powerReward(for: nextLevel)
+            if reward.revealCharges > 0 || reward.freeGuessCharges > 0 {
+                return (nextLevel, reward.revealCharges, reward.freeGuessCharges)
+            }
+            nextLevel += 1
+        }
+    }
+
+    private static func powerReward(for reachedLevel: Int) -> (revealCharges: Int, freeGuessCharges: Int) {
+        if reachedLevel == powerUnlockLevel {
+            return (1, 1)
+        }
+
+        guard reachedLevel > powerUnlockLevel else {
+            return (0, 0)
+        }
+
+        let offset = reachedLevel - powerUnlockLevel
+        let freeGuessCharges = offset.isMultiple(of: 3) ? 1 : 0
+        let revealCharges = offset.isMultiple(of: 6) ? 1 : 0
+        return (revealCharges, freeGuessCharges)
+    }
 }
 
 struct HangmanPuzzle: Equatable {

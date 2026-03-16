@@ -13,6 +13,7 @@ import SwiftUI
 final class AppViewModel: ObservableObject {
     @Published private(set) var phase: AppPhase = .splash
     @Published var isShowingDailyQuests = false
+    @Published var isShowingSettings = false
     let gameViewModel: HangmanGameViewModel
     private let startAppFlowUseCase = StartAppFlowUseCase()
     private let chooseCategoryFlowUseCase = ChooseCategoryFlowUseCase()
@@ -45,6 +46,14 @@ final class AppViewModel: ObservableObject {
 
     func closeDailyQuests() {
         isShowingDailyQuests = false
+    }
+
+    func openSettings() {
+        isShowingSettings = true
+    }
+
+    func closeSettings() {
+        isShowingSettings = false
     }
 
     func start() {

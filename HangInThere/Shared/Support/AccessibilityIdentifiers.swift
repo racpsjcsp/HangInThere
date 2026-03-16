@@ -16,10 +16,18 @@ enum AccessibilityID {
     enum CategorySelection {
         static let title = "categorySelection.title"
         static let dailyQuestsButton = "categorySelection.dailyQuestsButton"
+        static let settingsButton = "categorySelection.settingsButton"
 
         static func categoryButton(_ category: HangmanCategory) -> String {
             "categorySelection.category.\(category.rawValue)"
         }
+    }
+
+    enum Settings {
+        static let title = "settings.title"
+        static let soundToggle = "settings.soundToggle"
+        static let hapticsToggle = "settings.hapticsToggle"
+        static let doneButton = "settings.doneButton"
     }
 
     enum DailyQuests {

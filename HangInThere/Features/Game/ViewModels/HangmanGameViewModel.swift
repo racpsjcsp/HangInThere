@@ -18,7 +18,6 @@ final class HangmanGameViewModel: ObservableObject {
 
     private struct SuspendedRound {
         let puzzle: HangmanPuzzle
-        let message: String
         let usedPowerUp: Bool
     }
 
@@ -78,10 +77,12 @@ final class HangmanGameViewModel: ObservableObject {
         self.hapticPlayer = resolvedHapticPlayer
         self.refreshDailyQuestStateUseCase = RefreshDailyQuestStateUseCase(calendar: calendar)
         self.dateProvider = dateProvider
-        self.progress = progressRepository.loadProgress()
+        let loadedProgress = progressRepository.loadProgress()
+        self.progress = loadedProgress
         self.dailyQuestState = refreshDailyQuestStateUseCase.execute(
             existingState: dailyQuestRepository.loadState(),
-            on: dateProvider()
+            on: dateProvider(),
+            progress: loadedProgress
         )
         dailyQuestRepository.saveState(dailyQuestState)
     }
@@ -101,6 +102,7 @@ final class HangmanGameViewModel: ObservableObject {
             progressTitle: Strings.Selection.progressTitle,
             levelText: Strings.Selection.level(progress.level),
             progressValue: progress.progressToNextLevel,
+            nextRewardText: Strings.Selection.nextReward(nextPowerRewardText),
             revealTitle: Strings.Selection.revealStat,
             revealValue: "\(progress.revealLetterCharges)",
             freeGuessTitle: Strings.Selection.freeGuessStat,
@@ -108,6 +110,7 @@ final class HangmanGameViewModel: ObservableObject {
             dailyQuestsTitle: Strings.Selection.dailyQuestsTitle,
             dailyQuestsSummary: Strings.DailyQuests.categorySummary(dailyQuestState.completedQuestCount, dailyQuestState.quests.count),
             dailyQuestsButtonTitle: Strings.Selection.openDailyQuests,
+            settingsButtonTitle: Strings.Selection.openSettings,
             categories: HangmanCategory.allCases.map { category in
                 CategoryCardViewState(
                     category: category,
@@ -148,6 +151,22 @@ final class HangmanGameViewModel: ObservableObject {
                 isUnlocked: dailyQuestState.allQuestsCompleted,
                 isClaimed: dailyQuestState.isCompletionBonusClaimed
             )
+        )
+    }
+
+    var settingsMenuViewState: SettingsMenuViewState {
+        SettingsMenuViewState(
+            title: Strings.Settings.title,
+            subtitle: Strings.Settings.subtitle,
+            soundEnabled: soundPlayer.isSoundEnabled,
+            hapticsEnabled: hapticPlayer.isHapticsEnabled,
+            playerLevelText: Strings.Selection.level(progress.level),
+            progressText: Strings.DailyQuests.experience(
+                progress.experienceWithinCurrentLevel,
+                progress.experienceRequiredForCurrentLevel
+            ),
+            nextRewardText: Strings.Selection.nextReward(nextPowerRewardText),
+            storageNote: Strings.Settings.localStorageNote
         )
     }
 
@@ -231,7 +250,10 @@ final class HangmanGameViewModel: ObservableObject {
                     description: level.description,
                     imageName: level.assetName,
                     imageScale: level.assetScale,
-                    tint: level.tint
+                    tint: level.tint,
+                    resumeText: hasSuspendedRound(for: selectedCategory, level: level)
+                        ? Strings.LevelSelection.resume
+                        : nil
                 )
             }
         )
@@ -247,6 +269,10 @@ final class HangmanGameViewModel: ObservableObject {
 
     var isSoundEnabled: Bool {
         soundPlayer.isSoundEnabled
+    }
+
+    var isHapticsEnabled: Bool {
+        hapticPlayer.isHapticsEnabled
     }
 
     func hasSuspendedRound(for category: HangmanCategory, level: GameLevel) -> Bool {
@@ -266,7 +292,6 @@ final class HangmanGameViewModel: ObservableObject {
            let puzzle {
             suspendedRounds[.init(category: selectedCategory, level: selectedLevel)] = SuspendedRound(
                 puzzle: puzzle,
-                message: self.message,
                 usedPowerUp: currentRoundUsedPowerUp
             )
         }
@@ -309,6 +334,14 @@ final class HangmanGameViewModel: ObservableObject {
             soundPlayer.play(.soundToggle)
         }
         hapticPlayer.toggle()
+        objectWillChange.send()
+    }
+
+    func toggleHaptics() {
+        hapticPlayer.isHapticsEnabled.toggle()
+        if hapticPlayer.isHapticsEnabled {
+            hapticPlayer.toggle()
+        }
         objectWillChange.send()
     }
 
@@ -428,7 +461,7 @@ final class HangmanGameViewModel: ObservableObject {
             lastLevelsGained = 0
             lastRevealChargesGained = 0
             lastFreeGuessChargesGained = 0
-            message = suspendedRound.message
+            message = Strings.Message.resumedRound(selectedLevel?.title ?? Strings.Mode.mediumTitle)
         }
         currentRoundUsedPowerUp = suspendedRound.usedPowerUp
         suspendedRounds.removeValue(forKey: key)
@@ -510,7 +543,8 @@ final class HangmanGameViewModel: ObservableObject {
     private func refreshDailyQuestsIfNeeded() {
         let refreshedState = refreshDailyQuestStateUseCase.execute(
             existingState: dailyQuestState,
-            on: dateProvider()
+            on: dateProvider(),
+            progress: progress
         )
 
         guard refreshedState != dailyQuestState else { return }
@@ -526,6 +560,15 @@ final class HangmanGameViewModel: ObservableObject {
 
     private func persistDailyQuests() {
         dailyQuestRepository.saveState(dailyQuestState)
+    }
+
+    private var nextPowerRewardText: String {
+        let nextReward = progress.nextPowerReward
+        return Strings.Game.nextPowerReward(
+            level: nextReward.level,
+            revealCharges: nextReward.revealCharges,
+            freeGuessCharges: nextReward.freeGuessCharges
+        )
     }
 }
 

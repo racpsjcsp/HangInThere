@@ -23,8 +23,11 @@ For the full internal project documentation, see [`PROJECT_OVERVIEW.md`](./PROJE
   - Free Guess
 - persistent local progress with `UserDefaults`
 - daily quests with claimable XP rewards and Sunday bonus XP
+- daily quest generation now avoids power-up usage quests before power-ups are unlocked
 - in-progress round resume per category and difficulty, preserving guessed letters and round state
+- level selection surfaces a `Resume` indicator when a saved round exists for that difficulty
 - bundled sound effects and haptic feedback for gameplay and rewards
+- settings screen for sound and haptics
 - custom visual asset set for:
   - splash branding
   - category artwork
@@ -124,8 +127,12 @@ HangInThereApp
 - Gameplay now uses custom power-up artwork and a custom hangman illustration instead of only system symbols and native-only placeholders.
 - Gameplay now uses bundled sound effects for guesses, powers, wins/losses, level-ups, sound toggle, and quest reward claiming.
 - The quest screen now shows the player’s current level and XP progress toward the next level.
+- Category selection and settings now preview the player’s next power-up reward milestone.
+- Level selection now marks difficulties that already have a saved in-progress round with a resume indicator.
 - Win summaries now surface explicit level-up feedback and power-up reward feedback.
 - Leaving a round and returning later now resumes the saved in-progress round for that exact category and difficulty, including already guessed letters.
+- The settings sheet now provides separate sound and haptic controls with local persistence.
+- Daily quest generation now skips impossible `Use 1 power-up` quests until the player has actually unlocked power-ups.
 - Root safe-area handling was adjusted so the splash remains visually full-screen while scrollable screens do not expose content under the status bar.
 
 ## Future Direction

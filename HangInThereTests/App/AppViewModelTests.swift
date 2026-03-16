@@ -71,6 +71,27 @@ struct AppViewModelTests {
         #expect(category == .animals)
     }
 
+    @Test func openingAndClosingSettingsUpdatesSheetState() async throws {
+        let viewModel = await MainActor.run {
+            AppViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "Flow", hint: "Settings", difficulty: 1)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.openSettings()
+        }
+
+        #expect(await MainActor.run { viewModel.isShowingSettings } == true)
+
+        await MainActor.run {
+            viewModel.closeSettings()
+        }
+
+        #expect(await MainActor.run { viewModel.isShowingSettings } == false)
+    }
+
     @Test func chooseLevelTransitionsToGame() async throws {
         let viewModel = await MainActor.run {
             AppViewModel(

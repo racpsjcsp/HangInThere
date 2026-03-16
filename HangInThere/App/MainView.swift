@@ -35,7 +35,6 @@ struct MainView: View {
         GeometryReader { proxy in
             ZStack(alignment: .top) {
                 AppTheme.background.ignoresSafeArea()
-
                 phaseView
 
                 if viewModel.phase != .splash {
@@ -51,6 +50,9 @@ struct MainView: View {
         .preferredColorScheme(viewModel.phase == .splash ? .light : .dark)
         .sheet(isPresented: $viewModel.isShowingDailyQuests) {
             DailyQuestsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeDailyQuests)
+        }
+        .sheet(isPresented: $viewModel.isShowingSettings) {
+            SettingsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeSettings)
         }
     }
 
@@ -73,7 +75,8 @@ struct MainView: View {
             CategorySelectionView(
                 viewModel: viewModel.gameViewModel,
                 onChooseCategory: viewModel.chooseCategory,
-                onOpenDailyQuests: viewModel.openDailyQuests
+                onOpenDailyQuests: viewModel.openDailyQuests,
+                onOpenSettings: viewModel.openSettings
             )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),

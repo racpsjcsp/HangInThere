@@ -59,6 +59,10 @@ struct DailyQuestsView: View {
             Text(state.subtitle)
                 .font(AppTheme.Typography.body())
                 .foregroundStyle(AppTheme.textSecondary)
+
+            Text(Strings.DailyQuests.resetNote)
+                .font(AppTheme.Typography.caption())
+                .foregroundStyle(AppTheme.textSecondary.opacity(0.85))
         }
     }
 

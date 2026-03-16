@@ -59,9 +59,15 @@ struct GameLevelSelectionView: View {
                                 .scaleEffect(level.imageScale)
 
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.xxxSmall) {
-                                Text(level.title)
-                                    .font(AppTheme.Typography.section())
-                                    .foregroundStyle(AppTheme.textPrimary)
+                                HStack(spacing: AppTheme.Spacing.xSmall) {
+                                    Text(level.title)
+                                        .font(AppTheme.Typography.section())
+                                        .foregroundStyle(AppTheme.textPrimary)
+
+                                    if let resumeText = level.resumeText {
+                                        AppPill(text: resumeText, color: AppTheme.success)
+                                    }
+                                }
 
                                 Text(level.description)
                                     .font(AppTheme.Typography.body())

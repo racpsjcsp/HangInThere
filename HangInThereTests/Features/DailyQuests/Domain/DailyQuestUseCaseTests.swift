@@ -57,6 +57,28 @@ struct DailyQuestUseCaseTests {
         #expect(refreshed == originalState)
     }
 
+    @Test func generationSkipsPowerUpQuestBeforePowerUpsUnlock() async throws {
+        let useCase = GenerateDailyQuestStateUseCase(calendar: calendar)
+        let lockedProgress = PlayerProgress(level: 1, experience: 0, revealLetterCharges: 0, freeGuessCharges: 0)
+
+        let generatedKinds = (1...12).map { day in
+            useCase.execute(for: date(year: 2026, month: 1, day: day), progress: lockedProgress).quests.map(\.kind)
+        }
+
+        #expect(generatedKinds.joined().contains(.useOnePowerUp) == false)
+    }
+
+    @Test func generationCanOfferPowerUpQuestAfterPowerUpsUnlock() async throws {
+        let useCase = GenerateDailyQuestStateUseCase(calendar: calendar)
+        let unlockedProgress = PlayerProgress(level: 3, experience: 0, revealLetterCharges: 1, freeGuessCharges: 1)
+
+        let generatedKinds = (1...12).map { day in
+            useCase.execute(for: date(year: 2026, month: 1, day: day), progress: unlockedProgress).quests.map(\.kind)
+        }
+
+        #expect(generatedKinds.joined().contains(.useOnePowerUp))
+    }
+
     @Test func trackingEventsCompletesRelevantQuests() async throws {
         let state = DailyQuestState(
             generatedOn: Date(),

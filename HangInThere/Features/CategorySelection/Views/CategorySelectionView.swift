@@ -11,6 +11,7 @@ struct CategorySelectionView: View {
     @ObservedObject var viewModel: HangmanGameViewModel
     let onChooseCategory: (HangmanCategory) -> Void
     let onOpenDailyQuests: () -> Void
+    let onOpenSettings: () -> Void
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -91,6 +92,10 @@ struct CategorySelectionView: View {
                 AppProgressBar(progress: state.progressValue, fill: AppTheme.secondary)
                     .frame(height: 10)
 
+                Text(state.nextRewardText)
+                    .font(AppTheme.Typography.caption())
+                    .foregroundStyle(AppTheme.textSecondary)
+
                 HStack(spacing: AppTheme.Spacing.small) {
                     AppStatBadge(title: state.revealTitle, value: state.revealValue)
                     AppStatBadge(title: state.freeGuessTitle, value: state.freeGuessValue)
@@ -118,6 +123,16 @@ struct CategorySelectionView: View {
                         accessibilityIdentifier: AccessibilityID.CategorySelection.dailyQuestsButton,
                         action: onOpenDailyQuests
                     )
+
+                    AppButton(
+                        title: state.settingsButtonTitle,
+                        systemImage: Strings.Symbol.settingsButton,
+                        style: .ghost,
+                        layout: .horizontal,
+                        size: .compact,
+                        accessibilityIdentifier: AccessibilityID.CategorySelection.settingsButton,
+                        action: onOpenSettings
+                    )
                 }
             }
         }
@@ -125,5 +140,5 @@ struct CategorySelectionView: View {
 }
 
 #Preview {
-    CategorySelectionView(viewModel: HangmanGameViewModel(), onChooseCategory: { _ in }, onOpenDailyQuests: {})
+    CategorySelectionView(viewModel: HangmanGameViewModel(), onChooseCategory: { _ in }, onOpenDailyQuests: {}, onOpenSettings: {})
 }

@@ -59,6 +59,7 @@ final class SpySoundPlayer: SoundPlaying {
 
 @MainActor
 final class SpyHapticPlayer: HapticPlaying {
+    var isHapticsEnabled = true
     private(set) var toggleCallCount = 0
 
     func toggle() {

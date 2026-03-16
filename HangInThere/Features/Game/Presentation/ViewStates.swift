@@ -23,6 +23,7 @@ struct CategorySelectionViewState {
     let progressTitle: String
     let levelText: String
     let progressValue: Double
+    let nextRewardText: String
     let revealTitle: String
     let revealValue: String
     let freeGuessTitle: String
@@ -30,6 +31,7 @@ struct CategorySelectionViewState {
     let dailyQuestsTitle: String
     let dailyQuestsSummary: String
     let dailyQuestsButtonTitle: String
+    let settingsButtonTitle: String
     let categories: [CategoryCardViewState]
 }
 
@@ -40,6 +42,7 @@ struct LevelOptionViewState: Identifiable {
     let imageName: String
     let imageScale: CGFloat
     let tint: Color
+    let resumeText: String?
 
     var id: GameLevel { level }
 }
@@ -94,4 +97,15 @@ struct GameViewState {
     let guessedLetters: Set<String>
     let isPlaying: Bool
     let summary: SummaryViewState?
+}
+
+struct SettingsMenuViewState {
+    let title: String
+    let subtitle: String
+    let soundEnabled: Bool
+    let hapticsEnabled: Bool
+    let playerLevelText: String
+    let progressText: String
+    let nextRewardText: String
+    let storageNote: String
 }

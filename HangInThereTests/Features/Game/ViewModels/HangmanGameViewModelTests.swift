@@ -134,6 +134,27 @@ struct HangmanGameViewModelTests {
         #expect(state?.levels.map(\.level) == GameLevel.allCases)
     }
 
+    @Test func levelSelectionMarksSavedRoundsAsResumable() async throws {
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "AB", hint: "Letters", difficulty: 1)),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .easy)
+            viewModel.guess("A")
+            viewModel.showCategorySelection(message: Strings.Message.switchCategories, preservingCurrentRound: true)
+            viewModel.selectCategory(.animals)
+        }
+
+        let state = await MainActor.run { viewModel.levelSelectionViewState }
+
+        #expect(state?.levels.first(where: { $0.level == .easy })?.resumeText == Strings.LevelSelection.resume)
+        #expect(state?.levels.first(where: { $0.level == .medium })?.resumeText == nil)
+    }
+
     @Test func categorySelectionViewStateUsesCategoryAssets() async throws {
         let viewModel = await MainActor.run {
             HangmanGameViewModel(
@@ -318,6 +339,48 @@ struct HangmanGameViewModelTests {
         #expect(soundPlayer.isSoundEnabled == true)
         #expect(soundPlayer.playedEffects == [.soundToggle])
         #expect(hapticPlayer.toggleCallCount == 2)
+    }
+
+    @Test func togglingHapticsUpdatesPersistedStateAndOnlyFiresWhenEnabling() async throws {
+        let hapticPlayer = SpyHapticPlayer()
+        hapticPlayer.isHapticsEnabled = true
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(),
+                hapticPlayer: hapticPlayer
+            )
+        }
+
+        await MainActor.run {
+            viewModel.toggleHaptics()
+            viewModel.toggleHaptics()
+        }
+
+        #expect(hapticPlayer.isHapticsEnabled == true)
+        #expect(hapticPlayer.toggleCallCount == 1)
+    }
+
+    @Test func categoryAndSettingsStateShowNextPowerRewardPreview() async throws {
+        var storedProgress = PlayerProgress()
+        storedProgress.level = 4
+        storedProgress.experience = 260
+
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(storedProgress: storedProgress)
+            )
+        }
+
+        let categoryState = await MainActor.run { viewModel.categorySelectionViewState }
+        let settingsState = await MainActor.run { viewModel.settingsMenuViewState }
+        let expected = Strings.Selection.nextReward(
+            Strings.Game.nextPowerReward(level: 6, revealCharges: 0, freeGuessCharges: 1)
+        )
+
+        #expect(categoryState.nextRewardText == expected)
+        #expect(settingsState.nextRewardText == expected)
     }
 
     @Test func dailyQuestMenuViewStateShowsCurrentLevelAndExperienceProgress() async throws {

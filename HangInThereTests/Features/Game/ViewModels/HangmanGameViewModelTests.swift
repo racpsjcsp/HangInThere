@@ -187,7 +187,6 @@ struct HangmanGameViewModelTests {
 
         #expect(level == .hard)
         #expect(state?.gameLevelTitle == Strings.Mode.hardTitle)
-        #expect(state?.gameLevelImageName == GameLevel.hard.assetName)
     }
 
     @Test func levelAndGameViewStateUseExpectedArtworkMappings() async throws {
@@ -204,7 +203,6 @@ struct HangmanGameViewModelTests {
 
         let levelState = await MainActor.run { viewModel.levelSelectionViewState }
 
-        #expect(levelState?.categoryImageName == HangmanCategory.animals.assetName)
         #expect(levelState?.levels.map(\.imageName) == GameLevel.allCases.map(\.assetName))
         #expect(levelState?.levels.map(\.imageScale) == GameLevel.allCases.map(\.assetScale))
 
@@ -214,8 +212,6 @@ struct HangmanGameViewModelTests {
 
         let gameState = await MainActor.run { viewModel.gameViewState }
 
-        #expect(gameState?.categoryImageName == HangmanCategory.animals.assetName)
-        #expect(gameState?.gameLevelImageName == GameLevel.hard.assetName)
         #expect(gameState?.revealButtonImageName == PowerUp.revealLetter.assetName)
         #expect(gameState?.freeGuessButtonImageName == PowerUp.freeGuess.assetName)
     }

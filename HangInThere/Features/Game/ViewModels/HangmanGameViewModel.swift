@@ -116,8 +116,7 @@ final class HangmanGameViewModel: ObservableObject {
                     category: category,
                     title: category.title,
                     description: description(for: category),
-                    imageName: category.assetName,
-                    tint: category.tint
+                    imageName: category.assetName
                 )
             }
         )
@@ -204,10 +203,8 @@ final class HangmanGameViewModel: ObservableObject {
 
         return GameViewState(
             categoryTitle: puzzle.category.title,
-            categoryImageName: puzzle.category.assetName,
             categoryTint: puzzle.category.tint,
             gameLevelTitle: selectedLevel.title,
-            gameLevelImageName: selectedLevel.assetName,
             gameLevelTint: selectedLevel.tint,
             categoriesButtonTitle: Strings.Game.categories,
             playerLevelText: Strings.Selection.level(progress.level),
@@ -238,9 +235,7 @@ final class HangmanGameViewModel: ObservableObject {
 
         return GameLevelSelectionViewState(
             title: Strings.LevelSelection.title,
-            subtitle: Strings.LevelSelection.subtitle(selectedCategory.title),
             categoryTitle: selectedCategory.title,
-            categoryImageName: selectedCategory.assetName,
             categoryTint: selectedCategory.tint,
             backButtonTitle: Strings.LevelSelection.back,
             levels: GameLevel.allCases.map { level in
@@ -250,7 +245,6 @@ final class HangmanGameViewModel: ObservableObject {
                     description: level.description,
                     imageName: level.assetName,
                     imageScale: level.assetScale,
-                    tint: level.tint,
                     resumeText: hasSuspendedRound(for: selectedCategory, level: level)
                         ? Strings.LevelSelection.resume
                         : nil
@@ -329,8 +323,13 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func toggleSound() {
-        soundPlayer.isSoundEnabled.toggle()
-        if soundPlayer.isSoundEnabled {
+        setSoundEnabled(!soundPlayer.isSoundEnabled)
+    }
+
+    func setSoundEnabled(_ isEnabled: Bool) {
+        guard soundPlayer.isSoundEnabled != isEnabled else { return }
+        soundPlayer.isSoundEnabled = isEnabled
+        if isEnabled {
             soundPlayer.play(.soundToggle)
         }
         hapticPlayer.toggle()
@@ -338,8 +337,13 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func toggleHaptics() {
-        hapticPlayer.isHapticsEnabled.toggle()
-        if hapticPlayer.isHapticsEnabled {
+        setHapticsEnabled(!hapticPlayer.isHapticsEnabled)
+    }
+
+    func setHapticsEnabled(_ isEnabled: Bool) {
+        guard hapticPlayer.isHapticsEnabled != isEnabled else { return }
+        hapticPlayer.isHapticsEnabled = isEnabled
+        if isEnabled {
             hapticPlayer.toggle()
         }
         objectWillChange.send()

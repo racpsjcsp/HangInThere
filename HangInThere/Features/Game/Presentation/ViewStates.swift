@@ -12,7 +12,6 @@ struct CategoryCardViewState: Identifiable {
     let title: String
     let description: String
     let imageName: String
-    let tint: Color
 
     var id: HangmanCategory { category }
 }
@@ -41,7 +40,6 @@ struct LevelOptionViewState: Identifiable {
     let description: String
     let imageName: String
     let imageScale: CGFloat
-    let tint: Color
     let resumeText: String?
 
     var id: GameLevel { level }
@@ -49,9 +47,7 @@ struct LevelOptionViewState: Identifiable {
 
 struct GameLevelSelectionViewState {
     let title: String
-    let subtitle: String
     let categoryTitle: String
-    let categoryImageName: String
     let categoryTint: Color
     let backButtonTitle: String
     let levels: [LevelOptionViewState]
@@ -71,10 +67,8 @@ struct SummaryViewState {
 
 struct GameViewState {
     let categoryTitle: String
-    let categoryImageName: String
     let categoryTint: Color
     let gameLevelTitle: String
-    let gameLevelImageName: String
     let gameLevelTint: Color
     let categoriesButtonTitle: String
     let playerLevelText: String

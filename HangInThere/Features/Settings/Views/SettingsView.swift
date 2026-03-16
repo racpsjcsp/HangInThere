@@ -73,9 +73,11 @@ struct SettingsView: View {
                 toggleRow(
                     title: Strings.Settings.soundEffects,
                     systemImage: Strings.Symbol.settingsSound,
-                    isOn: state.soundEnabled,
+                    binding: Binding(
+                        get: { state.soundEnabled },
+                        set: viewModel.setSoundEnabled
+                    ),
                     accessibilityIdentifier: AccessibilityID.Settings.soundToggle,
-                    action: viewModel.toggleSound
                 )
 
                 Divider()
@@ -84,9 +86,11 @@ struct SettingsView: View {
                 toggleRow(
                     title: Strings.Settings.haptics,
                     systemImage: Strings.Symbol.settingsHaptics,
-                    isOn: state.hapticsEnabled,
+                    binding: Binding(
+                        get: { state.hapticsEnabled },
+                        set: viewModel.setHapticsEnabled
+                    ),
                     accessibilityIdentifier: AccessibilityID.Settings.hapticsToggle,
-                    action: viewModel.toggleHaptics
                 )
             }
         }
@@ -103,9 +107,8 @@ struct SettingsView: View {
     private func toggleRow(
         title: String,
         systemImage: String,
-        isOn: Bool,
+        binding: Binding<Bool>,
         accessibilityIdentifier: String,
-        action: @escaping () -> Void
     ) -> some View {
         HStack(spacing: AppTheme.Spacing.small) {
             Image(systemName: systemImage)
@@ -118,10 +121,7 @@ struct SettingsView: View {
 
             Spacer()
 
-            Toggle("", isOn: Binding(
-                get: { isOn },
-                set: { _ in action() }
-            ))
+            Toggle("", isOn: binding)
             .labelsHidden()
             .tint(AppTheme.secondary)
             .accessibilityIdentifier(accessibilityIdentifier)

@@ -33,8 +33,12 @@ The project is already structured to support growth beyond a small prototype.
 - 2 power-ups:
   - Reveal Letter
   - Free Guess
+- daily quests with claimable XP rewards and Sunday bonus scaling
 - round summary state for win/loss
 - persistent player progress with `UserDefaults`
+- persistent local daily quest state with `UserDefaults`
+- in-progress round resume per category and per difficulty
+- bundled sound effects and haptic feedback
 - deterministic setup for UI tests
 - custom visual assets for splash, categories, difficulty badges, power-ups, and the hangman illustration
 
@@ -52,12 +56,14 @@ The project is already structured to support growth beyond a small prototype.
   - `won` when all letters are revealed
   - `lost` when mistakes reach the maximum
 - Winning grants XP.
+- Daily quests can grant additional XP rewards when claimed.
 - The player starts with no power charges.
 - Reaching level 3 unlocks 1 `Reveal Letter` and 1 `Free Guess`.
 - Later milestone levels grant capped refills:
   - mostly `Free Guess`
   - `Reveal Letter` only on bigger milestones
   - both powers capped at 2 stored charges
+- If the player leaves an in-progress round and later returns to that same category and difficulty, the app restores the saved round state instead of rolling a new word.
 
 ## Difficulty System
 
@@ -213,12 +219,18 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
   - current production persistence
 - `InMemoryProgressRepository`
   - test and UI-test friendly persistence
+- `DailyQuestRepository`
+  - abstraction for daily quest persistence
+- `UserDefaultsDailyQuestRepository`
+  - current production persistence for daily quest state
+- `InMemoryDailyQuestRepository`
+  - test-friendly daily quest persistence
 
 ### Presentation Layer
 
 - `HangmanGameViewModel`
   - gameplay view model
-  - owns progress, selected category, selected level, round state, and feedback message
+  - owns progress, selected category, selected level, round state, daily quests, and feedback message
   - exposes view state objects for screens
 - `ViewStates.swift`
   - presentation-specific state models for rendering
@@ -243,11 +255,13 @@ Production mode:
 
 - `InMemoryWordRepository.default`
 - `UserDefaultsProgressRepository`
+- `UserDefaultsDailyQuestRepository`
 
 UI testing mode:
 
 - deterministic `InMemoryWordRepository`
 - `InMemoryProgressRepository`
+- in-memory daily quest persistence
 
 This makes the app easier to test and easier to extend later.
 
@@ -264,6 +278,16 @@ The app uses shared design-system components and theme values:
 
 This keeps the UI style more consistent and avoids repeated layout and styling code.
 
+## Feedback and Reward Layer
+
+The app now gives stronger round and progression feedback through:
+
+- bundled sound effects for guesses, powers, wins/losses, level-up, sound toggle, and quest reward claim
+- haptic feedback for the sound toggle
+- explicit level-up summary feedback after a win
+- explicit power reward summary feedback when milestone levels grant charges
+- quest-screen progress display showing current level and XP toward the next level
+
 ## Recent Visual Refresh
 
 Since the last committed baseline, the project received a larger custom-art pass:
@@ -278,6 +302,15 @@ The root view also now handles the top safe-area differently by phase:
 
 - the splash screen is allowed to read as a true full-screen background
 - the other scrollable screens still protect the status-bar area from content exposure during bounce
+
+## Round Resume Behavior
+
+To prevent word reroll abuse while still keeping navigation forgiving:
+
+- leaving the game mid-round stores the current round locally in memory
+- suspended rounds are tracked separately for each category and difficulty combination
+- returning to the same category and difficulty restores guessed letters, hint state, mistakes, shield state, and power usage state
+- finished rounds still start fresh on continue
 
 ## Asset Note
 
@@ -307,6 +340,9 @@ The unit tests cover:
 - game domain behavior
 - view-model behavior
 - repository-backed progress loading/saving behavior
+- daily quest generation, tracking, and claiming behavior
+- per-category and per-difficulty round resume behavior
+- sound and haptic trigger behavior through test spies
 
 ### UI tests
 

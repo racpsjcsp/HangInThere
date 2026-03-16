@@ -22,6 +22,9 @@ For the full internal project documentation, see [`PROJECT_OVERVIEW.md`](./PROJE
   - Reveal Letter
   - Free Guess
 - persistent local progress with `UserDefaults`
+- daily quests with claimable XP rewards and Sunday bonus XP
+- in-progress round resume per category and difficulty, preserving guessed letters and round state
+- bundled sound effects and haptic feedback for gameplay and rewards
 - custom visual asset set for:
   - splash branding
   - category artwork
@@ -119,6 +122,10 @@ HangInThereApp
 - Category selection now uses illustrated category cards with normalized card heights.
 - Difficulty selection now uses custom badge artwork for `Easy`, `Medium`, and `Hard`.
 - Gameplay now uses custom power-up artwork and a custom hangman illustration instead of only system symbols and native-only placeholders.
+- Gameplay now uses bundled sound effects for guesses, powers, wins/losses, level-ups, sound toggle, and quest reward claiming.
+- The quest screen now shows the player’s current level and XP progress toward the next level.
+- Win summaries now surface explicit level-up feedback and power-up reward feedback.
+- Leaving a round and returning later now resumes the saved in-progress round for that exact category and difficulty, including already guessed letters.
 - Root safe-area handling was adjusted so the splash remains visually full-screen while scrollable screens do not expose content under the status bar.
 
 ## Future Direction

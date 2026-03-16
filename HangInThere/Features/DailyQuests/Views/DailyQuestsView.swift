@@ -18,6 +18,7 @@ struct DailyQuestsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.large) {
                     header(state: state)
+                    progressCard(state: state)
 
                     if let sundayBonusText = state.sundayBonusText {
                         AppCard {
@@ -58,6 +59,29 @@ struct DailyQuestsView: View {
             Text(state.subtitle)
                 .font(AppTheme.Typography.body())
                 .foregroundStyle(AppTheme.textSecondary)
+        }
+    }
+
+    private func progressCard(state: DailyQuestMenuViewState) -> some View {
+        AppCard {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
+                HStack {
+                    Text(Strings.DailyQuests.playerProgressTitle)
+                        .font(AppTheme.Typography.section())
+                        .foregroundStyle(AppTheme.textPrimary)
+
+                    Spacer()
+
+                    AppPill(text: state.playerLevelText, color: AppTheme.primary)
+                }
+
+                AppProgressBar(progress: state.progressValue, fill: AppTheme.secondary)
+                    .frame(height: 10)
+
+                Text(state.experienceText)
+                    .font(AppTheme.Typography.body())
+                    .foregroundStyle(AppTheme.textSecondary)
+            }
         }
     }
 

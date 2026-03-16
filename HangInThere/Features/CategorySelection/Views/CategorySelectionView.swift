@@ -46,12 +46,12 @@ struct CategorySelectionView: View {
                                         .font(AppTheme.Typography.caption())
                                         .foregroundStyle(AppTheme.textSecondary)
                                         .multilineTextAlignment(.leading)
-                                        .lineLimit(2)
-                                        .frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+                                        .lineLimit(3)
+                                        .frame(maxWidth: .infinity, minHeight: 48, alignment: .topLeading)
 
                                     Spacer(minLength: 0)
                                 }
-                                .frame(maxWidth: .infinity, minHeight: 148, maxHeight: 148, alignment: .leading)
+                                .frame(maxWidth: .infinity, minHeight: 162, maxHeight: 162, alignment: .leading)
                             }
                         }
                         .buttonStyle(.plain)

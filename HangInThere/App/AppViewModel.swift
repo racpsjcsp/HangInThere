@@ -57,6 +57,9 @@ final class AppViewModel: ObservableObject {
 
     func chooseLevel(_ level: GameLevel) {
         guard let category = gameViewModel.currentCategory else { return }
+        if !gameViewModel.hasSuspendedRound(for: category, level: level) {
+            gameViewModel.discardSuspendedRound()
+        }
         apply(chooseLevelFlowUseCase.execute(category: category, level: level))
     }
 
@@ -74,7 +77,10 @@ final class AppViewModel: ObservableObject {
     private func apply(_ transition: AppFlowTransition) {
         withAnimation(AppTheme.Motion.screenTransition) {
             if let message = transition.categorySelectionMessage {
-                gameViewModel.showCategorySelection(message: message)
+                gameViewModel.showCategorySelection(
+                    message: message,
+                    preservingCurrentRound: phase == .game
+                )
             }
 
             if transition.phase == .levelSelection, let category = transition.selectedCategory {
@@ -82,7 +88,11 @@ final class AppViewModel: ObservableObject {
             }
 
             if let category = transition.selectedCategory, let level = transition.selectedLevel {
-                gameViewModel.startRound(for: category, level: level)
+                gameViewModel.startRound(
+                    for: category,
+                    level: level,
+                    resumeIfPossible: phase != .game
+                )
             }
 
             phase = transition.phase

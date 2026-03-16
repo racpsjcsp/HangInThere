@@ -77,7 +77,7 @@ struct GameplayUseCaseTests {
             previousWrongGuesses: 1
         )
 
-        guard case .won(_, let updatedProgress, let reward, _) = result else {
+        guard case .won(_, let updatedProgress, let reward, _, _, _) = result else {
             Issue.record("Expected a win resolution")
             return
         }

@@ -68,6 +68,53 @@ struct HangmanGameViewModelTests {
         #expect(repository.storedProgress.experience > 0)
     }
 
+    @Test func winningRoundThatLevelsUpPublishesLevelUpSummaryState() async throws {
+        var storedProgress = PlayerProgress()
+        storedProgress.experience = 79
+        let repository = StubProgressRepository(storedProgress: storedProgress)
+
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: repository
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .easy)
+            viewModel.guess("A")
+        }
+
+        let summary = await MainActor.run { viewModel.gameViewState?.summary }
+
+        #expect(summary?.isWin == true)
+        #expect(summary?.levelUpTitle == Strings.Game.levelUpTitle)
+        #expect(summary?.levelUpSubtitle == Strings.Game.levelUpSubtitle(2, levelsGained: 1))
+    }
+
+    @Test func winningRoundThatUnlocksPowersPublishesPowerRewardSummaryState() async throws {
+        var storedProgress = PlayerProgress()
+        storedProgress.experience = 199
+        let repository = StubProgressRepository(storedProgress: storedProgress)
+
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: repository
+            )
+        }
+
+        await MainActor.run {
+            viewModel.startRound(for: .animals, level: .easy)
+            viewModel.guess("A")
+        }
+
+        let summary = await MainActor.run { viewModel.gameViewState?.summary }
+
+        #expect(summary?.powerRewardTitle == Strings.Game.powerRewardTitle)
+        #expect(summary?.powerRewardSubtitle == Strings.Game.powerRewardSubtitle(revealCharges: 1, freeGuessCharges: 1))
+    }
+
     @Test func selectCategoryBuildsLevelSelectionState() async throws {
         let viewModel = await MainActor.run {
             HangmanGameViewModel(
@@ -224,5 +271,24 @@ struct HangmanGameViewModelTests {
 
         #expect(storedState?.quests.first?.isClaimed == true)
         #expect(progressRepository.storedProgress.experience == 50)
+    }
+
+    @Test func dailyQuestMenuViewStateShowsCurrentLevelAndExperienceProgress() async throws {
+        var storedProgress = PlayerProgress()
+        storedProgress.level = 2
+        storedProgress.experience = 120
+
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(storedProgress: storedProgress)
+            )
+        }
+
+        let state = await MainActor.run { viewModel.dailyQuestMenuViewState }
+
+        #expect(state.playerLevelText == Strings.Selection.level(2))
+        #expect(state.experienceText == Strings.DailyQuests.experience(40, 120))
+        #expect(state.progressValue == storedProgress.progressToNextLevel)
     }
 }

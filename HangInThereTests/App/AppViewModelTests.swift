@@ -139,4 +139,61 @@ struct AppViewModelTests {
         #expect(level == .medium)
         #expect(puzzle?.category == .animals)
     }
+
+    @Test func returningToSameCategoryAndLevelResumesInProgressRound() async throws {
+        let word = HangmanWord(answer: "AB", hint: "Letters", difficulty: 1)
+        let viewModel = await MainActor.run {
+            AppViewModel(
+                wordRepository: StubWordRepository(word: word),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.easy)
+            viewModel.gameViewModel.guess("A")
+            viewModel.goToCategories()
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.easy)
+        }
+
+        let phase = await MainActor.run { viewModel.phase }
+        let puzzle = await MainActor.run { viewModel.gameViewModel.puzzle }
+        let maskedAnswer = await MainActor.run { viewModel.gameViewModel.gameViewState?.maskedAnswer }
+
+        #expect(phase == .game)
+        #expect(puzzle?.guessedLetters == ["A"])
+        #expect(maskedAnswer == "A _")
+    }
+
+    @Test func choosingDifferentLevelAbandonsSuspendedRound() async throws {
+        let word = HangmanWord(answer: "AB", hint: "Letters", difficulty: 1)
+        let viewModel = await MainActor.run {
+            AppViewModel(
+                wordRepository: StubWordRepository(word: word),
+                progressRepository: StubProgressRepository()
+            )
+        }
+
+        await MainActor.run {
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.easy)
+            viewModel.gameViewModel.guess("A")
+            viewModel.goToCategories()
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.medium)
+            viewModel.goToCategories()
+            viewModel.chooseCategory(.animals)
+            viewModel.chooseLevel(.easy)
+        }
+
+        let phase = await MainActor.run { viewModel.phase }
+        let puzzle = await MainActor.run { viewModel.gameViewModel.puzzle }
+        let maskedAnswer = await MainActor.run { viewModel.gameViewModel.gameViewState?.maskedAnswer }
+
+        #expect(phase == .game)
+        #expect(puzzle?.guessedLetters.isEmpty == true)
+        #expect(maskedAnswer == "_ _")
+    }
 }

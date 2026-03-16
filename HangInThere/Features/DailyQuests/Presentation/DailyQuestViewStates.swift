@@ -29,8 +29,10 @@ struct DailyQuestBonusViewState {
 struct DailyQuestMenuViewState {
     let title: String
     let subtitle: String
+    let playerLevelText: String
+    let experienceText: String
+    let progressValue: Double
     let sundayBonusText: String?
     let quests: [DailyQuestItemViewState]
     let bonus: DailyQuestBonusViewState
 }
-

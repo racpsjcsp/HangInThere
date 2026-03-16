@@ -21,6 +21,8 @@ enum AppTheme {
     static let secondary = Color(red: 0.39, green: 0.84, blue: 0.72)
     static let accent = Color(red: 0.94, green: 0.30, blue: 0.38)
     static let success = Color(red: 0.48, green: 0.88, blue: 0.51)
+    static let successDeep = Color(red: 0.14, green: 0.58, blue: 0.30)
+    static let successSoft = Color(red: 0.74, green: 0.93, blue: 0.55)
     static let warning = Color(red: 0.98, green: 0.79, blue: 0.28)
     static let powerBlue = Color(red: 0.16, green: 0.50, blue: 0.98)
     static let powerBlueDeep = Color(red: 0.08, green: 0.28, blue: 0.82)

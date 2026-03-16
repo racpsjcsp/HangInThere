@@ -9,11 +9,29 @@ import AVFoundation
 import Foundation
 
 enum SoundEffect {
+    case claimReward
     case correctGuess
     case wrongGuess
     case winRound
     case loseRound
-    case powerUp
+    case revealPower
+    case freeGuessPower
+    case levelUp
+    case soundToggle
+
+    fileprivate var fileName: String {
+        switch self {
+        case .claimReward: "claimReward"
+        case .correctGuess: "correctGuess"
+        case .wrongGuess: "wrongGuess"
+        case .winRound: "winRound"
+        case .loseRound: "loseRound"
+        case .revealPower: "revealSound"
+        case .freeGuessPower: "freeGuessPower"
+        case .levelUp: "levelUp"
+        case .soundToggle: "soundToggle"
+        }
+    }
 }
 
 @MainActor
@@ -38,49 +56,36 @@ final class SoundEffectPlayer: SoundPlaying {
     static let shared = SoundEffectPlayer()
     private static let soundEnabledKey = "sound_effects_enabled"
 
-    private let engine = AVAudioEngine()
-    private let playerNode = AVAudioPlayerNode()
-    private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
-    private lazy var buffers: [SoundEffect: AVAudioPCMBuffer] = [
-        .correctGuess: makeBuffer(tones: [(880, 0.07), (1_176, 0.09)]),
-        .wrongGuess: makeBuffer(tones: [(320, 0.08), (220, 0.14)]),
-        .winRound: makeBuffer(tones: [(784, 0.1), (988, 0.1), (1_176, 0.16)]),
-        .loseRound: makeBuffer(tones: [(330, 0.1), (247, 0.14), (196, 0.18)]),
-        .powerUp: makeBuffer(tones: [(660, 0.05), (880, 0.08)])
-    ]
-    private var isConfigured = false
+    private let userDefaults: UserDefaults
+    private let bundle: Bundle
+    private var players: [SoundEffect: AVAudioPlayer] = [:]
+    private var isSessionConfigured = false
+
     var isSoundEnabled: Bool {
         get { userDefaults.object(forKey: Self.soundEnabledKey) as? Bool ?? true }
         set { userDefaults.set(newValue, forKey: Self.soundEnabledKey) }
     }
-    private let userDefaults: UserDefaults
 
-    private init(userDefaults: UserDefaults = .standard) {
+    private init(userDefaults: UserDefaults = .standard, bundle: Bundle = .main) {
         self.userDefaults = userDefaults
+        self.bundle = bundle
     }
 
     func play(_ effect: SoundEffect) {
         guard isSoundEnabled else { return }
 
         do {
-            try configureIfNeeded()
-            try startEngineIfNeeded()
-
-            guard let buffer = buffers[effect] else { return }
-
-            playerNode.stop()
-            playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts)
-
-            if !playerNode.isPlaying {
-                playerNode.play()
-            }
+            try configureSessionIfNeeded()
+            let player = try player(for: effect)
+            player.currentTime = 0
+            player.play()
         } catch {
-            assertionFailure("Failed to play sound effect: \(error)")
+            assertionFailure("Failed to play sound effect \(effect.fileName): \(error)")
         }
     }
 
-    private func configureIfNeeded() throws {
-        guard !isConfigured else { return }
+    private func configureSessionIfNeeded() throws {
+        guard !isSessionConfigured else { return }
 
         #if os(iOS)
         let session = AVAudioSession.sharedInstance()
@@ -88,50 +93,28 @@ final class SoundEffectPlayer: SoundPlaying {
         try session.setActive(true, options: [])
         #endif
 
-        engine.attach(playerNode)
-        engine.connect(playerNode, to: engine.mainMixerNode, format: format)
-        isConfigured = true
+        isSessionConfigured = true
     }
 
-    private func startEngineIfNeeded() throws {
-        guard !engine.isRunning else { return }
-        try engine.start()
-    }
-
-    private func makeBuffer(tones: [(frequency: Double, duration: Double)]) -> AVAudioPCMBuffer {
-        let totalFrames = tones.reduce(0) { partialResult, tone in
-            partialResult + Int(tone.duration * format.sampleRate)
-        }
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(totalFrames))!
-        buffer.frameLength = buffer.frameCapacity
-
-        guard let channel = buffer.floatChannelData?[0] else { return buffer }
-
-        var cursor = 0
-        let sampleRate = format.sampleRate
-
-        for tone in tones {
-            let frameCount = Int(tone.duration * sampleRate)
-            for frame in 0..<frameCount {
-                let progress = Double(frame) / Double(max(frameCount - 1, 1))
-                let envelope = amplitudeEnvelope(progress: progress)
-                let sample = sin(2 * Double.pi * tone.frequency * Double(frame) / sampleRate) * envelope
-                channel[cursor] = Float(sample * 0.3)
-                cursor += 1
-            }
+    private func player(for effect: SoundEffect) throws -> AVAudioPlayer {
+        if let player = players[effect] {
+            return player
         }
 
-        return buffer
-    }
+        let url = bundle.url(forResource: effect.fileName, withExtension: "wav", subdirectory: "Sounds")
+            ?? bundle.url(forResource: effect.fileName, withExtension: "wav")
 
-    private func amplitudeEnvelope(progress: Double) -> Double {
-        switch progress {
-        case 0..<0.12:
-            progress / 0.12
-        case 0.12..<0.78:
-            1
-        default:
-            max(0, 1 - ((progress - 0.78) / 0.22))
+        guard let url else {
+            throw NSError(
+                domain: "SoundEffectPlayer",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Missing sound file \(effect.fileName).wav in app bundle"]
+            )
         }
+
+        let player = try AVAudioPlayer(contentsOf: url)
+        player.prepareToPlay()
+        players[effect] = player
+        return player
     }
 }

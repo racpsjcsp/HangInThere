@@ -28,11 +28,15 @@ struct SpendPowerChargeUseCase {
 struct AwardProgressUseCase {
     func execute(progress: PlayerProgress, reward: Int) -> ProgressAwardResult {
         var updatedProgress = progress
+        let previousRevealCharges = updatedProgress.revealLetterCharges
+        let previousFreeGuessCharges = updatedProgress.freeGuessCharges
         let levelsGained = updatedProgress.awardExperience(reward)
 
         return ProgressAwardResult(
             progress: updatedProgress,
-            levelsGained: levelsGained
+            levelsGained: levelsGained,
+            revealChargesGained: updatedProgress.revealLetterCharges - previousRevealCharges,
+            freeGuessChargesGained: updatedProgress.freeGuessCharges - previousFreeGuessCharges
         )
     }
 }
@@ -40,4 +44,6 @@ struct AwardProgressUseCase {
 struct ProgressAwardResult {
     let progress: PlayerProgress
     let levelsGained: Int
+    let revealChargesGained: Int
+    let freeGuessChargesGained: Int
 }

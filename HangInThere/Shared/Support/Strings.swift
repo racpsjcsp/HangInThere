@@ -103,6 +103,7 @@ enum Strings {
         static let sundayBonus = "Sunday Bonus: 1.5x Quest XP"
         static let completionBonusTitle = "Complete All Daily Quests"
         static let completionBonusSubtitle = "Finish all three quests to unlock the bonus reward."
+        static let playerProgressTitle = "Current Progress"
 
         static func subtitle(_ completed: Int, _ total: Int) -> String {
             "\(completed) of \(total) quests completed today."
@@ -118,6 +119,10 @@ enum Strings {
 
         static func categorySummary(_ completed: Int, _ total: Int) -> String {
             "\(completed)/\(total) completed"
+        }
+
+        static func experience(_ current: Int, _ required: Int) -> String {
+            "\(current) XP / \(required) XP to level up"
         }
 
         static func questTitle(_ kind: DailyQuestKind) -> String {
@@ -184,6 +189,8 @@ enum Strings {
         static let powersTitle = "Power Items"
         static let wonTitle = "Round Cleared"
         static let lostTitle = "Try Again"
+        static let levelUpTitle = "Level Up"
+        static let powerRewardTitle = "Power Unlocked"
         static let nextRound = "Next Round"
         static let changeCategory = "Change Category"
         static let soundOn = "Sound On"
@@ -209,6 +216,25 @@ enum Strings {
 
         static func lostSubtitle(_ answer: String) -> String {
             "The answer was \(answer)"
+        }
+
+        static func levelUpSubtitle(_ level: Int, levelsGained: Int) -> String {
+            if levelsGained > 1 {
+                "Jumped \(levelsGained) levels to Level \(level)"
+            } else {
+                "Reached Level \(level)"
+            }
+        }
+
+        static func powerRewardSubtitle(revealCharges: Int, freeGuessCharges: Int) -> String {
+            let rewards = [
+                revealCharges > 0 ? "+\(revealCharges) Reveal" : nil,
+                freeGuessCharges > 0 ? "+\(freeGuessCharges) Free Guess" : nil
+            ]
+            .compactMap { $0 }
+            .joined(separator: "  •  ")
+
+            return rewards
         }
     }
 

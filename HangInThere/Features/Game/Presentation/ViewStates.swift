@@ -60,6 +60,10 @@ struct SummaryViewState {
     let subtitle: String
     let symbol: String
     let tint: Color
+    let levelUpTitle: String?
+    let levelUpSubtitle: String?
+    let powerRewardTitle: String?
+    let powerRewardSubtitle: String?
 }
 
 struct GameViewState {

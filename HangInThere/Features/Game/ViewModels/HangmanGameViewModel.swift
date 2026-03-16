@@ -11,6 +11,14 @@ import SwiftUI
 
 @MainActor
 final class HangmanGameViewModel: ObservableObject {
+    private struct SuspendedRound {
+        let category: HangmanCategory
+        let level: GameLevel
+        let puzzle: HangmanPuzzle
+        let message: String
+        let usedPowerUp: Bool
+    }
+
     @Published private(set) var progress = PlayerProgress()
     @Published private(set) var selectedCategory: HangmanCategory?
     @Published private(set) var selectedLevel: GameLevel?
@@ -18,6 +26,9 @@ final class HangmanGameViewModel: ObservableObject {
     @Published private(set) var dailyQuestState: DailyQuestState
     @Published private(set) var message = Strings.Message.initial
     @Published private(set) var lastAwardedXP: Int = 0
+    @Published private(set) var lastLevelsGained: Int = 0
+    @Published private(set) var lastRevealChargesGained: Int = 0
+    @Published private(set) var lastFreeGuessChargesGained: Int = 0
     @Published private(set) var roundPhase: RoundPhase = .playing
 
     private let startRoundUseCase: StartRoundUseCase
@@ -34,6 +45,7 @@ final class HangmanGameViewModel: ObservableObject {
     private let usePowerUpUseCase = UsePowerUpUseCase()
     private let resolveRoundStateUseCase = ResolveRoundStateUseCase()
     private var currentRoundUsedPowerUp = false
+    private var suspendedRound: SuspendedRound?
 
     convenience init() {
         self.init(
@@ -109,6 +121,12 @@ final class HangmanGameViewModel: ObservableObject {
         return DailyQuestMenuViewState(
             title: Strings.DailyQuests.title,
             subtitle: Strings.DailyQuests.subtitle(dailyQuestState.completedQuestCount, dailyQuestState.quests.count),
+            playerLevelText: Strings.Selection.level(progress.level),
+            experienceText: Strings.DailyQuests.experience(
+                progress.experienceWithinCurrentLevel,
+                progress.experienceRequiredForCurrentLevel
+            ),
+            progressValue: progress.progressToNextLevel,
             sundayBonusText: dailyQuestState.isSundayBonus ? Strings.DailyQuests.sundayBonus : nil,
             quests: dailyQuestState.quests.map { quest in
                 DailyQuestItemViewState(
@@ -143,7 +161,20 @@ final class HangmanGameViewModel: ObservableObject {
                     ? Strings.Game.wonSubtitle(lastAwardedXP)
                     : Strings.Game.lostSubtitle(puzzle.answer),
                 symbol: isWin ? Strings.Symbol.winSummary : Strings.Symbol.lossSummary,
-                tint: isWin ? AppTheme.success : AppTheme.accent
+                tint: isWin ? AppTheme.success : AppTheme.accent,
+                levelUpTitle: isWin && lastLevelsGained > 0 ? Strings.Game.levelUpTitle : nil,
+                levelUpSubtitle: isWin && lastLevelsGained > 0
+                    ? Strings.Game.levelUpSubtitle(progress.level, levelsGained: lastLevelsGained)
+                    : nil,
+                powerRewardTitle: isWin && (lastRevealChargesGained > 0 || lastFreeGuessChargesGained > 0)
+                    ? Strings.Game.powerRewardTitle
+                    : nil,
+                powerRewardSubtitle: isWin && (lastRevealChargesGained > 0 || lastFreeGuessChargesGained > 0)
+                    ? Strings.Game.powerRewardSubtitle(
+                        revealCharges: lastRevealChargesGained,
+                        freeGuessCharges: lastFreeGuessChargesGained
+                    )
+                    : nil
             )
         } else {
             summary = nil
@@ -215,8 +246,31 @@ final class HangmanGameViewModel: ObservableObject {
         soundPlayer.isSoundEnabled
     }
 
-    func showCategorySelection(message: String) {
+    func hasSuspendedRound(for category: HangmanCategory, level: GameLevel) -> Bool {
+        suspendedRound?.category == category && suspendedRound?.level == level
+    }
+
+    func discardSuspendedRound() {
+        suspendedRound = nil
+    }
+
+    func showCategorySelection(message: String, preservingCurrentRound: Bool = false) {
         refreshDailyQuestsIfNeeded()
+        if preservingCurrentRound,
+           roundPhase == .playing,
+           let selectedCategory,
+           let selectedLevel,
+           let puzzle {
+            suspendedRound = SuspendedRound(
+                category: selectedCategory,
+                level: selectedLevel,
+                puzzle: puzzle,
+                message: self.message,
+                usedPowerUp: currentRoundUsedPowerUp
+            )
+        } else {
+            suspendedRound = nil
+        }
         withAnimation(AppTheme.Motion.screenTransition) {
             roundPhase = .playing
             selectedCategory = nil
@@ -228,6 +282,9 @@ final class HangmanGameViewModel: ObservableObject {
 
     func selectCategory(_ category: HangmanCategory) {
         refreshDailyQuestsIfNeeded()
+        if suspendedRound?.category != category {
+            suspendedRound = nil
+        }
         withAnimation(AppTheme.Motion.screenTransition) {
             selectedCategory = category
             selectedLevel = nil
@@ -237,14 +294,25 @@ final class HangmanGameViewModel: ObservableObject {
         }
     }
 
-    func startRound(for category: HangmanCategory, level: GameLevel = .medium) {
+    func startRound(for category: HangmanCategory, level: GameLevel = .medium, resumeIfPossible: Bool = true) {
         selectedCategory = category
         selectedLevel = level
-        startRound(in: category, level: level)
+        if resumeIfPossible,
+           let suspendedRound,
+           suspendedRound.category == category,
+           suspendedRound.level == level {
+            resumeRound(from: suspendedRound)
+        } else {
+            suspendedRound = nil
+            startRound(in: category, level: level)
+        }
     }
 
     func toggleSound() {
         soundPlayer.isSoundEnabled.toggle()
+        if soundPlayer.isSoundEnabled {
+            soundPlayer.play(.soundToggle)
+        }
         hapticPlayer.toggle()
         objectWillChange.send()
     }
@@ -298,7 +366,7 @@ final class HangmanGameViewModel: ObservableObject {
                 previousWrongGuesses: puzzle.wrongGuesses
             )
             if case .playing = resolution {
-                soundPlayer.play(.powerUp)
+                soundPlayer.play(.revealPower)
             }
             apply(resolution, triggeredByPowerUp: true)
 
@@ -309,7 +377,7 @@ final class HangmanGameViewModel: ObservableObject {
             currentRoundUsedPowerUp = true
             applyDailyQuestEvent(.powerUpUsed)
             message = Strings.Message.freeGuessActivated
-            soundPlayer.play(.powerUp)
+            soundPlayer.play(.freeGuessPower)
         }
     }
 
@@ -319,6 +387,7 @@ final class HangmanGameViewModel: ObservableObject {
         dailyQuestState = result.state
         progress = result.progress
         message = Strings.Message.dailyQuestRewardClaimed(result.rewardXP)
+        soundPlayer.play(.claimReward)
         persistProgress()
         persistDailyQuests()
     }
@@ -329,6 +398,7 @@ final class HangmanGameViewModel: ObservableObject {
         dailyQuestState = result.state
         progress = result.progress
         message = Strings.Message.dailyQuestBonusClaimed(result.rewardXP)
+        soundPlayer.play(.claimReward)
         persistProgress()
         persistDailyQuests()
     }
@@ -345,10 +415,27 @@ final class HangmanGameViewModel: ObservableObject {
             puzzle = nextPuzzle
             roundPhase = .playing
             lastAwardedXP = 0
+            lastLevelsGained = 0
+            lastRevealChargesGained = 0
+            lastFreeGuessChargesGained = 0
             message = Strings.Message.makeFirstGuess
         }
         currentRoundUsedPowerUp = false
         applyDailyQuestEvent(.roundStarted(category: category))
+    }
+
+    private func resumeRound(from suspendedRound: SuspendedRound) {
+        withAnimation(AppTheme.Motion.screenTransition) {
+            puzzle = suspendedRound.puzzle
+            roundPhase = .playing
+            lastAwardedXP = 0
+            lastLevelsGained = 0
+            lastRevealChargesGained = 0
+            lastFreeGuessChargesGained = 0
+            message = suspendedRound.message
+        }
+        currentRoundUsedPowerUp = suspendedRound.usedPowerUp
+        self.suspendedRound = nil
     }
 
     private func apply(_ resolution: RoundResolution, triggeredByPowerUp: Bool = false) {
@@ -366,11 +453,14 @@ final class HangmanGameViewModel: ObservableObject {
                 soundPlayer.play(.wrongGuess)
             }
 
-        case .won(let puzzle, let progress, let reward, let levelsGained):
+        case .won(let puzzle, let progress, let reward, let levelsGained, let revealChargesGained, let freeGuessChargesGained):
             withAnimation(AppTheme.Motion.summaryReveal) {
                 self.puzzle = puzzle
                 self.progress = progress
                 lastAwardedXP = reward
+                lastLevelsGained = levelsGained
+                lastRevealChargesGained = revealChargesGained
+                lastFreeGuessChargesGained = freeGuessChargesGained
                 roundPhase = .summary
             }
             persistProgress()
@@ -383,7 +473,7 @@ final class HangmanGameViewModel: ObservableObject {
             message = levelsGained > 0
                 ? Strings.Message.levelUp(progress.level)
                 : Strings.Message.roundWon(reward)
-            soundPlayer.play(.winRound)
+            soundPlayer.play(levelsGained > 0 ? .levelUp : .winRound)
 
         case .lost(let puzzle):
             withAnimation(AppTheme.Motion.summaryReveal) {
@@ -391,6 +481,9 @@ final class HangmanGameViewModel: ObservableObject {
                 roundPhase = .summary
             }
             lastAwardedXP = 0
+            lastLevelsGained = 0
+            lastRevealChargesGained = 0
+            lastFreeGuessChargesGained = 0
             applyDailyQuestEvent(.roundLost)
             message = Strings.Message.roundLost(puzzle.answer)
             soundPlayer.play(.loseRound)

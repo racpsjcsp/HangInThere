@@ -15,6 +15,7 @@ struct GameScreenView: View {
     @State private var wrongFlash = false
     @State private var shakeTrigger: CGFloat = 0
     @State private var showWinCelebration = false
+    @State private var roundRefreshPulse = false
 
     var body: some View {
         if let state = viewModel.gameViewState {
@@ -49,13 +50,18 @@ struct GameScreenView: View {
             .animation(AppTheme.Motion.summaryReveal, value: state.summary?.title)
             .onChange(of: state.maskedAnswer) { oldValue, newValue in
                 guard oldValue != newValue, state.isPlaying else { return }
+                guard revealedCharacterCount(in: newValue) > revealedCharacterCount(in: oldValue) else { return }
                 triggerCorrectFeedback()
             }
             .onChange(of: state.wrongValue) { oldValue, newValue in
                 guard oldValue != newValue, state.isPlaying else { return }
+                guard !(oldValue != Strings.Game.none && newValue == Strings.Game.none) else { return }
                 triggerWrongFeedback()
             }
-            .onChange(of: state.summary?.title) { _, _ in
+            .onChange(of: state.summary?.title) { oldValue, newValue in
+                if oldValue != nil, newValue == nil, state.isPlaying {
+                    triggerRoundRefreshFeedback()
+                }
                 triggerWinCelebrationIfNeeded(for: state.summary)
             }
             .onAppear {
@@ -207,13 +213,15 @@ struct GameScreenView: View {
             soundToggleButton
                 .padding(AppTheme.Spacing.small)
         }
-        .scaleEffect(correctPulse ? 1.02 : 1)
+        .scaleEffect(correctPulse ? 1.02 : (roundRefreshPulse ? 1.015 : 1))
         .modifier(ShakeEffect(animatableData: shakeTrigger))
         .overlay {
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
                 .stroke(
                     wrongFlash
                     ? AppTheme.accent.opacity(0.8)
+                    : roundRefreshPulse
+                    ? state.gameLevelTint.opacity(0.85)
                     : AppTheme.success.opacity(correctPulse ? 0.75 : 0),
                     lineWidth: 2
                 )
@@ -221,8 +229,10 @@ struct GameScreenView: View {
         .shadow(
             color: wrongFlash
                 ? AppTheme.accent.opacity(0.28)
+                : roundRefreshPulse
+                ? state.gameLevelTint.opacity(0.28)
                 : AppTheme.success.opacity(correctPulse ? 0.25 : 0),
-            radius: correctPulse || wrongFlash ? 18 : 0
+            radius: correctPulse || wrongFlash || roundRefreshPulse ? 18 : 0
         )
     }
 
@@ -336,6 +346,32 @@ struct GameScreenView: View {
                         .multilineTextAlignment(.center)
                 }
 
+                if let levelUpTitle = summary.levelUpTitle,
+                   let levelUpSubtitle = summary.levelUpSubtitle {
+                    rewardBanner(
+                        title: levelUpTitle,
+                        subtitle: levelUpSubtitle,
+                        icon: "arrow.up.circle.fill",
+                        gradient: [AppTheme.successSoft.opacity(0.98), AppTheme.secondary.opacity(0.96), AppTheme.success.opacity(0.92)],
+                        iconColor: AppTheme.successDeep,
+                        borderColor: AppTheme.successDeep.opacity(0.28)
+                    )
+                }
+
+                if let powerRewardTitle = summary.powerRewardTitle,
+                   let powerRewardSubtitle = summary.powerRewardSubtitle {
+                    rewardBanner(
+                        title: powerRewardTitle,
+                        subtitle: powerRewardSubtitle,
+                        icon: "sparkles",
+                        gradient: [AppTheme.powerPurple.opacity(0.92), AppTheme.powerBlue.opacity(0.94), AppTheme.secondary.opacity(0.92)],
+                        iconColor: Color.white,
+                        borderColor: Color.white.opacity(0.28),
+                        textColor: Color.white.opacity(0.94),
+                        captionColor: Color.white.opacity(0.78)
+                    )
+                }
+
                 VStack(spacing: AppTheme.Spacing.small) {
                     AppButton(
                         title: Strings.Game.nextRound,
@@ -368,6 +404,54 @@ struct GameScreenView: View {
         }
     }
 
+    private func rewardBanner(
+        title: String,
+        subtitle: String,
+        icon: String,
+        gradient: [Color],
+        iconColor: Color,
+        borderColor: Color,
+        textColor: Color = Color.black.opacity(0.82),
+        captionColor: Color = Color.black.opacity(0.66)
+    ) -> some View {
+        HStack(spacing: AppTheme.Spacing.small) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.22))
+                    .frame(width: 42, height: 42)
+
+                Image(systemName: icon)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(iconColor)
+            }
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xxxSmall) {
+                Text(title.uppercased())
+                    .font(AppTheme.Typography.caption())
+                    .foregroundStyle(captionColor)
+
+                Text(subtitle)
+                    .font(AppTheme.Typography.body())
+                    .foregroundStyle(textColor)
+            }
+
+            Spacer()
+        }
+        .padding(AppTheme.Spacing.small)
+        .background(
+            LinearGradient(
+                colors: gradient,
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            in: RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        }
+    }
+
     private func triggerCorrectFeedback() {
         withAnimation(AppTheme.Motion.feedbackPulse) {
             correctPulse = true
@@ -396,6 +480,18 @@ struct GameScreenView: View {
         }
     }
 
+    private func triggerRoundRefreshFeedback() {
+        withAnimation(.easeOut(duration: 0.22)) {
+            roundRefreshPulse = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
+            withAnimation(.easeOut(duration: 0.22)) {
+                roundRefreshPulse = false
+            }
+        }
+    }
+
     private func triggerWinCelebrationIfNeeded(for summary: SummaryViewState?) {
         guard let summary else {
             showWinCelebration = false
@@ -411,6 +507,14 @@ struct GameScreenView: View {
         DispatchQueue.main.async {
             withAnimation(AppTheme.Motion.celebration) {
                 showWinCelebration = true
+            }
+        }
+    }
+
+    private func revealedCharacterCount(in maskedAnswer: String) -> Int {
+        maskedAnswer.reduce(into: 0) { count, character in
+            if character != Character(Strings.Game.maskedLetter) && character != Character(Strings.Game.blankCharacter) {
+                count += 1
             }
         }
     }

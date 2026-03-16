@@ -111,7 +111,9 @@ struct ResolveRoundStateUseCase {
                 puzzle: puzzle,
                 progress: award.progress,
                 reward: reward,
-                levelsGained: award.levelsGained
+                levelsGained: award.levelsGained,
+                revealChargesGained: award.revealChargesGained,
+                freeGuessChargesGained: award.freeGuessChargesGained
             )
 
         case .lost:
@@ -134,6 +136,13 @@ enum PowerUpUseResult {
 
 enum RoundResolution {
     case playing(wrongGuessesChanged: Bool, freeGuessShield: Bool, remainingLives: Int)
-    case won(puzzle: HangmanPuzzle, progress: PlayerProgress, reward: Int, levelsGained: Int)
+    case won(
+        puzzle: HangmanPuzzle,
+        progress: PlayerProgress,
+        reward: Int,
+        levelsGained: Int,
+        revealChargesGained: Int,
+        freeGuessChargesGained: Int
+    )
     case lost(puzzle: HangmanPuzzle)
 }

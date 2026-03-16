@@ -46,3 +46,22 @@ final class StubDailyQuestRepository: DailyQuestRepository {
         storedState = state
     }
 }
+
+@MainActor
+final class SpySoundPlayer: SoundPlaying {
+    var isSoundEnabled = true
+    private(set) var playedEffects: [SoundEffect] = []
+
+    func play(_ effect: SoundEffect) {
+        playedEffects.append(effect)
+    }
+}
+
+@MainActor
+final class SpyHapticPlayer: HapticPlaying {
+    private(set) var toggleCallCount = 0
+
+    func toggle() {
+        toggleCallCount += 1
+    }
+}

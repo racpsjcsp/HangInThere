@@ -45,6 +45,18 @@ struct DailyQuestUseCaseTests {
         #expect(refreshed.quests.map(\.kind) != originalState.quests.map(\.kind))
     }
 
+    @Test func refreshKeepsExistingQuestStateWithinSameDay() async throws {
+        let useCase = RefreshDailyQuestStateUseCase(calendar: calendar)
+        let sameDay = date(year: 2026, month: 3, day: 13)
+        var originalState = GenerateDailyQuestStateUseCase(calendar: calendar).execute(for: sameDay)
+        originalState.quests[0].progress = 1
+        originalState.quests[0].isClaimed = true
+
+        let refreshed = useCase.execute(existingState: originalState, on: sameDay.addingTimeInterval(60 * 60 * 6))
+
+        #expect(refreshed == originalState)
+    }
+
     @Test func trackingEventsCompletesRelevantQuests() async throws {
         let state = DailyQuestState(
             generatedOn: Date(),
@@ -72,6 +84,53 @@ struct DailyQuestUseCaseTests {
         #expect(updated.quests.first(where: { $0.kind == .winTwoRoundsInARow })?.isCompleted == true)
     }
 
+    @Test func trackingRoundLostResetsCurrentWinStreakButPreservesHighestStreak() async throws {
+        let useCase = TrackDailyQuestEventUseCase()
+        let state = DailyQuestState(
+            generatedOn: Date(),
+            quests: [DailyQuest(kind: .winTwoRoundsInARow, rewardXP: 150)],
+            stats: DailyQuestStats(currentWinStreak: 2, highestWinStreak: 2),
+            completionBonusXP: 200
+        )
+
+        let updated = useCase.execute(state: state, event: .roundLost)
+
+        #expect(updated.stats.currentWinStreak == 0)
+        #expect(updated.stats.highestWinStreak == 2)
+        #expect(updated.quests.first?.progress == 2)
+    }
+
+    @Test func trackingEventsUpdatesEachQuestStatFromItsOwnSource() async throws {
+        var updated = DailyQuestState(
+            generatedOn: Date(),
+            quests: [
+                DailyQuest(kind: .useOnePowerUp, rewardXP: 50),
+                DailyQuest(kind: .earnTwoHundredXP, rewardXP: 100),
+                DailyQuest(kind: .winOneMediumRound, rewardXP: 100),
+                DailyQuest(kind: .playTwoCategories, rewardXP: 100),
+                DailyQuest(kind: .finishRoundWithThreeLives, rewardXP: 100),
+                DailyQuest(kind: .winOneHardRound, rewardXP: 150),
+                DailyQuest(kind: .solveRoundWithoutPowers, rewardXP: 150)
+            ],
+            completionBonusXP: 200
+        )
+        let useCase = TrackDailyQuestEventUseCase()
+
+        updated = useCase.execute(state: updated, event: .roundStarted(category: .animals))
+        updated = useCase.execute(state: updated, event: .roundStarted(category: .foods))
+        updated = useCase.execute(state: updated, event: .powerUpUsed)
+        updated = useCase.execute(state: updated, event: .roundWon(level: .medium, reward: 120, remainingLives: 4, usedPowerUp: true))
+        updated = useCase.execute(state: updated, event: .roundWon(level: .hard, reward: 80, remainingLives: 4, usedPowerUp: false))
+
+        #expect(updated.quests.first(where: { $0.kind == .useOnePowerUp })?.progress == 1)
+        #expect(updated.quests.first(where: { $0.kind == .earnTwoHundredXP })?.progress == 200)
+        #expect(updated.quests.first(where: { $0.kind == .winOneMediumRound })?.progress == 1)
+        #expect(updated.quests.first(where: { $0.kind == .playTwoCategories })?.progress == 2)
+        #expect(updated.quests.first(where: { $0.kind == .finishRoundWithThreeLives })?.progress == 1)
+        #expect(updated.quests.first(where: { $0.kind == .winOneHardRound })?.progress == 1)
+        #expect(updated.quests.first(where: { $0.kind == .solveRoundWithoutPowers })?.progress == 1)
+    }
+
     @Test func claimQuestRewardMarksQuestClaimedAndAwardsExperience() async throws {
         let state = DailyQuestState(
             generatedOn: Date(),
@@ -88,6 +147,25 @@ struct DailyQuestUseCaseTests {
         #expect(result?.rewardXP == 50)
         #expect(result?.state.quests.first?.isClaimed == true)
         #expect(result?.progress.experience == 50)
+    }
+
+    @Test func claimQuestRewardReturnsLevelsGainedWhenRewardCrossesThreshold() async throws {
+        let state = DailyQuestState(
+            generatedOn: Date(),
+            quests: [DailyQuest(kind: .earnTwoHundredXP, progress: 200, isClaimed: false, rewardXP: 100)],
+            completionBonusXP: 200
+        )
+        var progress = PlayerProgress()
+        progress.experience = 79
+
+        let result = ClaimDailyQuestRewardUseCase().execute(
+            state: state,
+            kind: .earnTwoHundredXP,
+            progress: progress
+        )
+
+        #expect(result?.levelsGained == 1)
+        #expect(result?.progress.level == 2)
     }
 
     @Test func claimCompletionBonusRequiresAllQuestsCompleted() async throws {

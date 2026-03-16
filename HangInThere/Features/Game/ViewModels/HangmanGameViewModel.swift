@@ -11,9 +11,12 @@ import SwiftUI
 
 @MainActor
 final class HangmanGameViewModel: ObservableObject {
-    private struct SuspendedRound {
+    private struct SuspendedRoundKey: Hashable {
         let category: HangmanCategory
         let level: GameLevel
+    }
+
+    private struct SuspendedRound {
         let puzzle: HangmanPuzzle
         let message: String
         let usedPowerUp: Bool
@@ -45,7 +48,7 @@ final class HangmanGameViewModel: ObservableObject {
     private let usePowerUpUseCase = UsePowerUpUseCase()
     private let resolveRoundStateUseCase = ResolveRoundStateUseCase()
     private var currentRoundUsedPowerUp = false
-    private var suspendedRound: SuspendedRound?
+    private var suspendedRounds: [SuspendedRoundKey: SuspendedRound] = [:]
 
     convenience init() {
         self.init(
@@ -247,11 +250,11 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func hasSuspendedRound(for category: HangmanCategory, level: GameLevel) -> Bool {
-        suspendedRound?.category == category && suspendedRound?.level == level
+        suspendedRounds[.init(category: category, level: level)] != nil
     }
 
-    func discardSuspendedRound() {
-        suspendedRound = nil
+    func discardSuspendedRound(for category: HangmanCategory, level: GameLevel) {
+        suspendedRounds.removeValue(forKey: .init(category: category, level: level))
     }
 
     func showCategorySelection(message: String, preservingCurrentRound: Bool = false) {
@@ -261,15 +264,11 @@ final class HangmanGameViewModel: ObservableObject {
            let selectedCategory,
            let selectedLevel,
            let puzzle {
-            suspendedRound = SuspendedRound(
-                category: selectedCategory,
-                level: selectedLevel,
+            suspendedRounds[.init(category: selectedCategory, level: selectedLevel)] = SuspendedRound(
                 puzzle: puzzle,
                 message: self.message,
                 usedPowerUp: currentRoundUsedPowerUp
             )
-        } else {
-            suspendedRound = nil
         }
         withAnimation(AppTheme.Motion.screenTransition) {
             roundPhase = .playing
@@ -282,9 +281,6 @@ final class HangmanGameViewModel: ObservableObject {
 
     func selectCategory(_ category: HangmanCategory) {
         refreshDailyQuestsIfNeeded()
-        if suspendedRound?.category != category {
-            suspendedRound = nil
-        }
         withAnimation(AppTheme.Motion.screenTransition) {
             selectedCategory = category
             selectedLevel = nil
@@ -297,13 +293,12 @@ final class HangmanGameViewModel: ObservableObject {
     func startRound(for category: HangmanCategory, level: GameLevel = .medium, resumeIfPossible: Bool = true) {
         selectedCategory = category
         selectedLevel = level
+        let key = SuspendedRoundKey(category: category, level: level)
         if resumeIfPossible,
-           let suspendedRound,
-           suspendedRound.category == category,
-           suspendedRound.level == level {
-            resumeRound(from: suspendedRound)
+           let suspendedRound = suspendedRounds[key] {
+            resumeRound(from: suspendedRound, for: key)
         } else {
-            suspendedRound = nil
+            suspendedRounds.removeValue(forKey: key)
             startRound(in: category, level: level)
         }
     }
@@ -410,6 +405,7 @@ final class HangmanGameViewModel: ObservableObject {
 
     private func startRound(in category: HangmanCategory, level: GameLevel) {
         refreshDailyQuestsIfNeeded()
+        suspendedRounds.removeValue(forKey: .init(category: category, level: level))
         let nextPuzzle = startRoundUseCase.execute(category: category, level: level)
         withAnimation(AppTheme.Motion.screenTransition) {
             puzzle = nextPuzzle
@@ -424,7 +420,7 @@ final class HangmanGameViewModel: ObservableObject {
         applyDailyQuestEvent(.roundStarted(category: category))
     }
 
-    private func resumeRound(from suspendedRound: SuspendedRound) {
+    private func resumeRound(from suspendedRound: SuspendedRound, for key: SuspendedRoundKey) {
         withAnimation(AppTheme.Motion.screenTransition) {
             puzzle = suspendedRound.puzzle
             roundPhase = .playing
@@ -435,7 +431,7 @@ final class HangmanGameViewModel: ObservableObject {
             message = suspendedRound.message
         }
         currentRoundUsedPowerUp = suspendedRound.usedPowerUp
-        self.suspendedRound = nil
+        suspendedRounds.removeValue(forKey: key)
     }
 
     private func apply(_ resolution: RoundResolution, triggeredByPowerUp: Bool = false) {

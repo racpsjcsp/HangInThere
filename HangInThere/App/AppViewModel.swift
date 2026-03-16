@@ -57,9 +57,6 @@ final class AppViewModel: ObservableObject {
 
     func chooseLevel(_ level: GameLevel) {
         guard let category = gameViewModel.currentCategory else { return }
-        if !gameViewModel.hasSuspendedRound(for: category, level: level) {
-            gameViewModel.discardSuspendedRound()
-        }
         apply(chooseLevelFlowUseCase.execute(category: category, level: level))
     }
 

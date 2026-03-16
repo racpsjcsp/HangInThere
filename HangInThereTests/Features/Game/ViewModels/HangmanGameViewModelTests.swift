@@ -273,6 +273,53 @@ struct HangmanGameViewModelTests {
         #expect(progressRepository.storedProgress.experience == 50)
     }
 
+    @Test func claimingDailyQuestRewardPlaysClaimSound() async throws {
+        let dailyQuestState = DailyQuestState(
+            generatedOn: Date(timeIntervalSince1970: 1_773_169_600),
+            quests: [DailyQuest(kind: .winOneRound, progress: 1, isClaimed: false, rewardXP: 50)],
+            completionBonusXP: 200
+        )
+        let soundPlayer = SpySoundPlayer()
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(),
+                dailyQuestRepository: StubDailyQuestRepository(storedState: dailyQuestState),
+                dateProvider: { Date(timeIntervalSince1970: 1_773_169_600) },
+                soundPlayer: soundPlayer
+            )
+        }
+
+        await MainActor.run {
+            viewModel.claimDailyQuest(.winOneRound)
+        }
+
+        #expect(soundPlayer.playedEffects == [.claimReward])
+    }
+
+    @Test func togglingSoundOnlyPlaysConfirmationWhenTurningSoundBackOn() async throws {
+        let soundPlayer = SpySoundPlayer()
+        soundPlayer.isSoundEnabled = true
+        let hapticPlayer = SpyHapticPlayer()
+        let viewModel = await MainActor.run {
+            HangmanGameViewModel(
+                wordRepository: StubWordRepository(word: HangmanWord(answer: "A", hint: "Letter", difficulty: 1)),
+                progressRepository: StubProgressRepository(),
+                soundPlayer: soundPlayer,
+                hapticPlayer: hapticPlayer
+            )
+        }
+
+        await MainActor.run {
+            viewModel.toggleSound()
+            viewModel.toggleSound()
+        }
+
+        #expect(soundPlayer.isSoundEnabled == true)
+        #expect(soundPlayer.playedEffects == [.soundToggle])
+        #expect(hapticPlayer.toggleCallCount == 2)
+    }
+
     @Test func dailyQuestMenuViewStateShowsCurrentLevelAndExperienceProgress() async throws {
         var storedProgress = PlayerProgress()
         storedProgress.level = 2

@@ -14,12 +14,20 @@ enum Strings {
         static let foodsCategory = "foodsCategory"
         static let objectsCategory = "objectsCategory"
 
+        static let hangmanGallows = "gallows"
+        static let hangmanHead = "head"
+        static let hangmanTorso = "torso"
+        static let hangmanLeftArm = "leftArm"
+        static let hangmanRightArm = "rightArm"
+        static let hangmanLeftLeg = "leftLeg"
+        static let hangmanRightLeg = "rightLeg"
+
         static let easyMode = "easyMode"
         static let mediumMode = "mediumMode"
         static let hardMode = "hardMode"
 
         static let revealPower = "powerUp1"
-        static let freeGuessPower = "powerUp10"
+        static let freeGuessPower = "powerUp2"
 
         static let splashLogo = "hangInThere1"
         static let splashEmblem = "hangInThereEmblem"
@@ -204,7 +212,7 @@ enum Strings {
         static let hint = "Hint"
         static let lives = "Lives"
         static let wrong = "Wrong"
-        static let none = "None"
+        static let none = "-"
         static let freeGuessActive = "Free Guess Active"
         static let powersTitle = "Power Items"
         static let wonTitle = "Round Cleared"

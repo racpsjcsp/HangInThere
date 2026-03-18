@@ -314,9 +314,7 @@ final class InMemoryWordRepository: WordRepository {
 
     init(wordsByCategoryAndLevel: [HangmanCategory: [GameLevel: [HangmanWord]]]) {
         self.wordsByCategoryAndLevel = wordsByCategoryAndLevel
-        self.remainingWordsByCategoryAndLevel = wordsByCategoryAndLevel.mapValues { levels in
-            levels.mapValues { $0.shuffled() }
-        }
+        self.remainingWordsByCategoryAndLevel = wordsByCategoryAndLevel
     }
 
     init(wordsByCategory: [HangmanCategory: [HangmanWord]]) {
@@ -333,9 +331,7 @@ final class InMemoryWordRepository: WordRepository {
             }
         )
         self.wordsByCategoryAndLevel = leveledWords
-        self.remainingWordsByCategoryAndLevel = leveledWords.mapValues { levels in
-            levels.mapValues { $0.shuffled() }
-        }
+        self.remainingWordsByCategoryAndLevel = leveledWords
     }
 
     func randomWord(for category: HangmanCategory, level: GameLevel) -> HangmanWord {
@@ -357,10 +353,18 @@ final class InMemoryWordRepository: WordRepository {
 
     private func dequeueWord(for category: HangmanCategory, level: GameLevel) -> HangmanWord? {
         if remainingWordsByCategoryAndLevel[category]?[level]?.isEmpty == true {
-            remainingWordsByCategoryAndLevel[category]?[level] = wordsByCategoryAndLevel[category]?[level]?.shuffled() ?? []
+            remainingWordsByCategoryAndLevel[category]?[level] = wordsByCategoryAndLevel[category]?[level] ?? []
         }
 
-        return remainingWordsByCategoryAndLevel[category]?[level]?.popLast()
+        guard var remainingWords = remainingWordsByCategoryAndLevel[category]?[level],
+              !remainingWords.isEmpty else {
+            return nil
+        }
+
+        let randomIndex = Int.random(in: remainingWords.indices)
+        let nextWord = remainingWords.remove(at: randomIndex)
+        remainingWordsByCategoryAndLevel[category]?[level] = remainingWords
+        return nextWord
     }
 
     static let `default` = InMemoryWordRepository(wordsByCategoryAndLevel: GameWordBank.wordsByCategoryAndLevel)

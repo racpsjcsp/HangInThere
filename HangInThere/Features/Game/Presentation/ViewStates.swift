@@ -79,13 +79,16 @@ struct GameViewState {
     let livesTitle: String
     let livesValue: String
     let wrongTitle: String
+    let wrongGuessCount: Int
     let wrongValue: String
     let showFreeGuessActive: Bool
     let freeGuessActiveText: String
     let message: String
-    let revealButtonTitle: String
+    let revealPowerTitle: String
+    let revealPowerCharges: Int
     let revealButtonImageName: String
-    let freeGuessButtonTitle: String
+    let freeGuessPowerTitle: String
+    let freeGuessPowerCharges: Int
     let freeGuessButtonImageName: String
     let keyboardRows: [[String]]
     let guessedLetters: Set<String>

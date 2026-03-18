@@ -8,6 +8,18 @@
 import SwiftUI
 
 struct GameScreenView: View {
+    private struct PuzzleLayoutMetrics {
+        let hangmanHeight: CGFloat
+        let hangmanHorizontalPadding: CGFloat
+        let sideColumnWidth: CGFloat
+        let sideColumnSpacing: CGFloat
+        let statBadgeVerticalPadding: CGFloat
+        let powerLabelWidth: CGFloat
+        let powerLabelToIconOffset: CGFloat
+        let powerIconSize: CGFloat
+        let powerRingSize: CGFloat
+    }
+
     @ObservedObject var viewModel: HangmanGameViewModel
     let onGoToCategories: () -> Void
     let onContinueAfterRound: () -> Void
@@ -16,6 +28,8 @@ struct GameScreenView: View {
     @State private var shakeTrigger: CGFloat = 0
     @State private var showWinCelebration = false
     @State private var roundRefreshPulse = false
+    @State private var revealPowerFlash = false
+    @State private var freeGuessPowerFlash = false
 
     var body: some View {
         if let state = viewModel.gameViewState {
@@ -24,7 +38,10 @@ struct GameScreenView: View {
                 ScrollView {
                     VStack(spacing: AppTheme.Spacing.large) {
                         topBar(state: state)
-                        puzzleCard(state: state)
+                        puzzleCard(
+                            state: state,
+                            contentWidth: max(0, proxy.size.width - (horizontalInset * 2))
+                        )
                         if let summary = state.summary {
                             summaryCard(summary: summary)
                                 .transition(.asymmetric(
@@ -32,10 +49,7 @@ struct GameScreenView: View {
                                     removal: .opacity
                                 ))
                         } else {
-                            VStack(spacing: AppTheme.Spacing.large) {
-                                powersCard(state: state)
-                                keyboard(state: state)
-                            }
+                            keyboard(state: state)
                             .transition(.asymmetric(
                                 insertion: .opacity,
                                 removal: .move(edge: .bottom).combined(with: .opacity)
@@ -53,9 +67,9 @@ struct GameScreenView: View {
                 guard revealedCharacterCount(in: newValue) > revealedCharacterCount(in: oldValue) else { return }
                 triggerCorrectFeedback()
             }
-            .onChange(of: state.wrongValue) { oldValue, newValue in
+            .onChange(of: state.wrongGuessCount) { oldValue, newValue in
                 guard oldValue != newValue, state.isPlaying else { return }
-                guard !(oldValue != Strings.Game.none && newValue == Strings.Game.none) else { return }
+                guard !(oldValue > 0 && newValue == 0) else { return }
                 triggerWrongFeedback()
             }
             .onChange(of: state.summary?.title) { oldValue, newValue in
@@ -63,6 +77,14 @@ struct GameScreenView: View {
                     triggerRoundRefreshFeedback()
                 }
                 triggerWinCelebrationIfNeeded(for: state.summary)
+            }
+            .onChange(of: state.revealPowerCharges) { oldValue, newValue in
+                guard newValue < oldValue else { return }
+                triggerPowerFeedback(for: .revealLetter)
+            }
+            .onChange(of: state.freeGuessPowerCharges) { oldValue, newValue in
+                guard newValue < oldValue else { return }
+                triggerPowerFeedback(for: .freeGuess)
             }
             .onAppear {
                 triggerWinCelebrationIfNeeded(for: state.summary)
@@ -163,17 +185,29 @@ struct GameScreenView: View {
         .fixedSize(horizontal: true, vertical: false)
     }
 
-    private func puzzleCard(state: GameViewState) -> some View {
-        AppCard {
+    private func puzzleCard(state: GameViewState, contentWidth: CGFloat) -> some View {
+        let metrics = puzzleLayoutMetrics(for: contentWidth)
+
+        return AppCard {
             VStack(spacing: AppTheme.Spacing.medium) {
                 VStack(spacing: AppTheme.Spacing.xxSmall) {
                     Text(state.playerLevelText)
                         .font(AppTheme.Typography.caption())
                         .foregroundStyle(AppTheme.textMuted)
 
-                    HangmanDrawingView(stage: state.hangmanStage)
-                        .frame(height: 126)
-                        .padding(.horizontal, AppTheme.Spacing.medium)
+                    ZStack {
+                        HangmanArtworkView(stage: state.hangmanStage)
+                            .frame(height: metrics.hangmanHeight)
+                            .padding(.horizontal, metrics.hangmanHorizontalPadding)
+
+                        HStack {
+                            statsColumn(state: state, metrics: metrics)
+
+                            Spacer()
+
+                            powerColumn(state: state, metrics: metrics)
+                        }
+                    }
 
                     Text(state.maskedAnswer)
                         .font(AppTheme.Typography.letter())
@@ -192,11 +226,6 @@ struct GameScreenView: View {
                         .foregroundStyle(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .accessibilityIdentifier(AccessibilityID.Game.hintText)
-                }
-
-                HStack(spacing: AppTheme.Spacing.small) {
-                    AppStatBadge(title: state.livesTitle, value: state.livesValue)
-                    AppStatBadge(title: state.wrongTitle, value: state.wrongValue)
                 }
 
                 if state.showFreeGuessActive {
@@ -236,38 +265,172 @@ struct GameScreenView: View {
         )
     }
 
-    private func powersCard(state: GameViewState) -> some View {
-        AppCard {
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.small) {
-                Text(Strings.Game.powersTitle)
-                    .font(AppTheme.Typography.section())
+    private func statsColumn(state: GameViewState, metrics: PuzzleLayoutMetrics) -> some View {
+        VStack(spacing: metrics.sideColumnSpacing) {
+            compactGameStatBadge(
+                title: state.livesTitle,
+                value: state.livesValue,
+                metrics: metrics
+            )
+            compactGameStatBadge(
+                title: state.wrongTitle,
+                value: state.wrongValue,
+                metrics: metrics
+            )
+        }
+    }
+
+    private func powerColumn(state: GameViewState, metrics: PuzzleLayoutMetrics) -> some View {
+        VStack(spacing: metrics.sideColumnSpacing) {
+            compactPowerButton(
+                title: state.revealPowerTitle,
+                imageName: state.revealButtonImageName,
+                chargeCount: "\(state.revealPowerCharges)",
+                isFlashing: revealPowerFlash,
+                metrics: metrics,
+                accessibilityIdentifier: AccessibilityID.Game.revealButton
+            ) {
+                viewModel.usePower(.revealLetter)
+            }
+
+            compactPowerButton(
+                title: state.freeGuessPowerTitle,
+                imageName: state.freeGuessButtonImageName,
+                chargeCount: "\(state.freeGuessPowerCharges)",
+                isFlashing: freeGuessPowerFlash,
+                metrics: metrics,
+                accessibilityIdentifier: AccessibilityID.Game.freeGuessButton
+            ) {
+                viewModel.usePower(.freeGuess)
+            }
+        }
+    }
+
+    private func compactGameStatBadge(title: String, value: String, metrics: PuzzleLayoutMetrics) -> some View {
+        VStack(alignment: .center, spacing: AppTheme.Spacing.xxxSmall) {
+            Text(title.uppercased())
+                .font(AppTheme.Typography.caption())
+                .foregroundStyle(AppTheme.textMuted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+
+            Text(value)
+                .font(AppTheme.Typography.section())
+                .foregroundStyle(AppTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(width: metrics.sideColumnWidth)
+        .padding(.vertical, metrics.statBadgeVerticalPadding)
+        .background(
+            Color.white.opacity(0.06),
+            in: RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+        )
+    }
+
+    private func compactPowerButton(
+        title: String,
+        imageName: String,
+        chargeCount: String,
+        isFlashing: Bool,
+        metrics: PuzzleLayoutMetrics,
+        accessibilityIdentifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 0) {
+                Text(title)
+                    .font(AppTheme.Typography.caption())
                     .foregroundStyle(AppTheme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(width: metrics.powerLabelWidth)
+                    .padding(.bottom, metrics.powerLabelToIconOffset)
 
-                HStack(spacing: AppTheme.Spacing.small) {
-                    AppButton(
-                        title: state.revealButtonTitle,
-                        systemImage: nil,
-                        assetImage: state.revealButtonImageName,
-                        style: .powerReveal,
-                        layout: .vertical,
-                        size: .compact,
-                        accessibilityIdentifier: AccessibilityID.Game.revealButton
-                    ) {
-                        viewModel.usePower(.revealLetter)
-                    }
+                ZStack(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(Color.white.opacity(isFlashing ? 0.16 : 0))
+                        .frame(width: metrics.powerRingSize, height: metrics.powerRingSize)
+                        .overlay {
+                            Circle()
+                                .stroke(AppTheme.secondary.opacity(isFlashing ? 0.65 : 0), lineWidth: 3)
+                        }
+                        .shadow(color: AppTheme.secondary.opacity(isFlashing ? 0.45 : 0), radius: isFlashing ? 16 : 0)
 
-                    AppButton(
-                        title: state.freeGuessButtonTitle,
-                        systemImage: nil,
-                        assetImage: state.freeGuessButtonImageName,
-                        style: .powerFreeGuess,
-                        layout: .vertical,
-                        size: .compact,
-                        accessibilityIdentifier: AccessibilityID.Game.freeGuessButton
-                    ) {
-                        viewModel.usePower(.freeGuess)
-                    }
+                    Image(imageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: metrics.powerIconSize, height: metrics.powerIconSize)
+                        .offset(y: -6)
+                        .scaleEffect(isFlashing ? 1.14 : 1)
+
+                    Text(chargeCount)
+                        .font(AppTheme.Typography.caption())
+                        .foregroundStyle(AppTheme.textPrimary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.black.opacity(0.42), in: Capsule())
+                        .offset(x: 4, y: 4)
                 }
+            }
+        }
+        .buttonStyle(.plain)
+        .animation(.easeOut(duration: 0.22), value: isFlashing)
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private func puzzleLayoutMetrics(for contentWidth: CGFloat) -> PuzzleLayoutMetrics {
+        switch contentWidth {
+        case ..<340:
+            PuzzleLayoutMetrics(
+                hangmanHeight: 212,
+                hangmanHorizontalPadding: 0,
+                sideColumnWidth: 78,
+                sideColumnSpacing: AppTheme.Spacing.xSmall,
+                statBadgeVerticalPadding: AppTheme.Spacing.xSmall,
+                powerLabelWidth: 72,
+                powerLabelToIconOffset: -1,
+                powerIconSize: 58,
+                powerRingSize: 60
+            )
+        case ..<390:
+            PuzzleLayoutMetrics(
+                hangmanHeight: 232,
+                hangmanHorizontalPadding: 6,
+                sideColumnWidth: 84,
+                sideColumnSpacing: AppTheme.Spacing.small,
+                statBadgeVerticalPadding: AppTheme.Spacing.xSmall,
+                powerLabelWidth: 78,
+                powerLabelToIconOffset: -1,
+                powerIconSize: 64,
+                powerRingSize: 66
+            )
+        default:
+            PuzzleLayoutMetrics(
+                hangmanHeight: 252,
+                hangmanHorizontalPadding: 12,
+                sideColumnWidth: 92,
+                sideColumnSpacing: AppTheme.Spacing.small,
+                statBadgeVerticalPadding: AppTheme.Spacing.small,
+                powerLabelWidth: 86,
+                powerLabelToIconOffset: 0,
+                powerIconSize: 76,
+                powerRingSize: 76
+            )
+        }
+    }
+
+    private func triggerPowerFeedback(for power: PowerUp) {
+        switch power {
+        case .revealLetter:
+            revealPowerFlash = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+                revealPowerFlash = false
+            }
+        case .freeGuess:
+            freeGuessPowerFlash = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+                freeGuessPowerFlash = false
             }
         }
     }
@@ -535,103 +698,48 @@ private struct ShakeEffect: GeometryEffect {
     }
 }
 
-private struct HangmanDrawingView: View {
+private struct HangmanArtworkView: View {
     let stage: Int
 
     var body: some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-            let lineWidth = max(3, min(size.width, size.height) * 0.028)
-            let stroke = StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
-            let frameColor = Color.white.opacity(0.82)
-            let bodyColor = AppTheme.accent.opacity(0.96)
+        ZStack {
+            hangmanPart(Strings.Asset.hangmanGallows)
 
-            ZStack {
-                HangmanFrameShape()
-                    .stroke(frameColor, style: stroke)
-
-                if stage > 0 {
-                    Circle()
-                        .stroke(bodyColor, style: stroke)
-                        .frame(width: size.width * 0.12, height: size.width * 0.12)
-                        .position(x: size.width * 0.67, y: size.height * 0.24)
-                        .transition(.scale.combined(with: .opacity))
-                }
-
-                if stage > 1 {
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.31))
-                        path.addLine(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
-                    }
-                    .stroke(bodyColor, style: stroke)
-                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                }
-
-                if stage > 2 {
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.38))
-                        path.addLine(to: CGPoint(x: size.width * 0.57, y: size.height * 0.48))
-                    }
-                    .stroke(bodyColor, style: stroke)
-                    .transition(.opacity.combined(with: .move(edge: .leading)))
-                }
-
-                if stage > 3 {
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.38))
-                        path.addLine(to: CGPoint(x: size.width * 0.77, y: size.height * 0.48))
-                    }
-                    .stroke(bodyColor, style: stroke)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-                }
-
-                if stage > 4 {
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
-                        path.addLine(to: CGPoint(x: size.width * 0.58, y: size.height * 0.74))
-                    }
-                    .stroke(bodyColor, style: stroke)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
-
-                if stage > 5 {
-                    Path { path in
-                        path.move(to: CGPoint(x: size.width * 0.67, y: size.height * 0.58))
-                        path.addLine(to: CGPoint(x: size.width * 0.76, y: size.height * 0.74))
-                    }
-                    .stroke(bodyColor, style: stroke)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
+            if stage > 0 {
+                hangmanPart(Strings.Asset.hangmanHead)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if stage > 1 {
+                hangmanPart(Strings.Asset.hangmanTorso)
+            }
+
+            if stage > 2 {
+                hangmanPart(Strings.Asset.hangmanLeftArm)
+            }
+
+            if stage > 3 {
+                hangmanPart(Strings.Asset.hangmanRightArm)
+            }
+
+            if stage > 4 {
+                hangmanPart(Strings.Asset.hangmanLeftLeg)
+            }
+
+            if stage > 5 {
+                hangmanPart(Strings.Asset.hangmanRightLeg)
+            }
         }
-        .drawingGroup()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(AppTheme.Motion.summaryReveal, value: stage)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Hangman stage \(stage)")
     }
-}
 
-private struct HangmanFrameShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        path.move(to: CGPoint(x: rect.width * 0.18, y: rect.height * 0.86))
-        path.addLine(to: CGPoint(x: rect.width * 0.82, y: rect.height * 0.86))
-
-        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.86))
-        path.addLine(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.08))
-
-        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.08))
-        path.addLine(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.08))
-
-        path.move(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.08))
-        path.addLine(to: CGPoint(x: rect.width * 0.67, y: rect.height * 0.13))
-
-        path.move(to: CGPoint(x: rect.width * 0.30, y: rect.height * 0.22))
-        path.addLine(to: CGPoint(x: rect.width * 0.43, y: rect.height * 0.08))
-
-        return path
+    private func hangmanPart(_ assetName: String) -> some View {
+        Image(assetName)
+            .resizable()
+            .scaledToFit()
+            .transition(.opacity.combined(with: .scale(scale: 0.94)))
     }
 }
 

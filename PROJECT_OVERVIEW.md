@@ -43,7 +43,7 @@ The project is already structured to support growth beyond a small prototype.
 - bundled sound effects and haptic feedback
 - settings screen for sound and haptic controls
 - deterministic setup for UI tests
-- custom visual assets for splash, categories, difficulty badges, power-ups, and the hangman illustration
+- custom visual assets for splash, categories, difficulty badges, power-ups, and sliced hangman illustration parts
 
 ## Core Gameplay Rules
 
@@ -78,6 +78,12 @@ The app currently supports explicit difficulty-based content routing:
 - `hard`
 
 The repository loads words from a dedicated pool for the selected difficulty, not from a single shared list filtered in the UI layer.
+
+Within the selected difficulty pool:
+
+- each round now draws randomly from the remaining unseen words
+- words are not repeated until that category+difficulty pool is exhausted
+- when exhausted, the pool refills and continues random selection
 
 The active difficulty is visually shown during gameplay through:
 
@@ -301,6 +307,16 @@ Since the last committed baseline, the project received a larger custom-art pass
 - category selection cards now use category-specific artwork and aligned card heights
 - difficulty selection now uses custom badge artwork for all three levels
 - gameplay uses custom power-up artwork and a custom hangman illustration
+- gameplay now uses layered sliced hangman assets for each mistake stage:
+  - gallows
+  - head
+  - torso
+  - left arm
+  - right arm
+  - left leg
+  - right leg
+- the gameplay screen now places lives, wrong guesses, and power controls directly around the hangman area instead of using a separate power card
+- power controls are icon-based, show charge counts, and flash when a charge is consumed
 - the splash screen uses splash-specific readability treatment, with darker text over a lighter translucent feature panel
 
 The root view also now handles the top safe-area differently by phase:
@@ -325,6 +341,7 @@ Current note for future cleanup:
 
 - some artwork still uses UI-side sizing adjustments to compensate for uneven visual padding inside the source PNGs
 - this should be normalized in the source asset files later so the app can remove those scale tweaks and rely on uniform artwork bounds instead
+- the gameplay screen now uses responsive layout metrics for the puzzle area to reduce brittleness across narrower widths
 
 ## Strings and Constants
 

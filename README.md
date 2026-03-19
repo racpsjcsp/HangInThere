@@ -136,7 +136,11 @@ HangInThereApp
 - Daily quest generation now skips impossible `Use 1 power-up` quests until the player has actually unlocked power-ups.
 - The gameplay screen was reworked so lives, wrong guesses, and power actions live directly around the hangman area instead of in separate wide sections.
 - Power actions now use icon-based controls with charge counts and on-use visual feedback.
+- Power actions now use dedicated `revealPower` and `freeGuessPower` artwork assets.
 - Word selection now picks randomly from the remaining words in each category and difficulty pool, instead of consuming a single stable shuffled order.
+- The gameplay hint now briefly highlights with a left-to-right sweep when a new round loads.
+- Wrong guesses in the compact gameplay badge now wrap cleanly in grouped lines instead of truncating.
+- The asset catalog is now grouped into folders such as `categories`, `powerUps`, `difficulty`, `hangman`, `branding`, and `backgrounds` for easier maintenance.
 - Root safe-area handling was adjusted so the splash remains visually full-screen while scrollable screens do not expose content under the status bar.
 
 ## Future Direction

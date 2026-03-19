@@ -44,6 +44,7 @@ The project is already structured to support growth beyond a small prototype.
 - settings screen for sound and haptic controls
 - deterministic setup for UI tests
 - custom visual assets for splash, categories, difficulty badges, power-ups, and sliced hangman illustration parts
+- asset catalog organization into grouped folders for categories, power-ups, difficulty badges, hangman parts, branding, and backgrounds
 
 ## Core Gameplay Rules
 
@@ -90,6 +91,14 @@ The active difficulty is visually shown during gameplay through:
 - a top badge/chip
 - a dedicated color
 - a dedicated symbol
+
+The gameplay board now also includes:
+
+- a custom sliced hangman illustration instead of the previous native line drawing
+- compact lives and wrong-guess badges beside the hangman
+- icon-only power controls with charge counts
+- a hint highlight sweep when each new round loads
+- wrapped wrong-letter display in the compact badge so all six possible mistakes remain readable
 
 ## Architecture
 

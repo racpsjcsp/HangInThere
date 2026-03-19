@@ -30,6 +30,8 @@ struct GameScreenView: View {
     @State private var roundRefreshPulse = false
     @State private var revealPowerFlash = false
     @State private var freeGuessPowerFlash = false
+    @State private var hintFlash = false
+    @State private var hintSweepOffset: CGFloat = -220
 
     var body: some View {
         if let state = viewModel.gameViewState {
@@ -78,6 +80,10 @@ struct GameScreenView: View {
                 }
                 triggerWinCelebrationIfNeeded(for: state.summary)
             }
+            .onChange(of: state.hintText) { oldValue, newValue in
+                guard oldValue != newValue, state.isPlaying else { return }
+                triggerHintFlash()
+            }
             .onChange(of: state.revealPowerCharges) { oldValue, newValue in
                 guard newValue < oldValue else { return }
                 triggerPowerFeedback(for: .revealLetter)
@@ -88,6 +94,9 @@ struct GameScreenView: View {
             }
             .onAppear {
                 triggerWinCelebrationIfNeeded(for: state.summary)
+                if state.isPlaying {
+                    triggerHintFlash()
+                }
             }
         }
     }
@@ -217,16 +226,7 @@ struct GameScreenView: View {
                         .accessibilityIdentifier(AccessibilityID.Game.maskedAnswer)
                 }
 
-                VStack(spacing: AppTheme.Spacing.xxxSmall) {
-                    Text(state.hintTitle)
-                        .font(AppTheme.Typography.caption())
-                        .foregroundStyle(AppTheme.textMuted)
-                    Text(state.hintText)
-                        .font(AppTheme.Typography.body())
-                        .foregroundStyle(AppTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .accessibilityIdentifier(AccessibilityID.Game.hintText)
-                }
+                hintBlock(state: state)
 
                 if state.showFreeGuessActive {
                     AppPill(text: state.freeGuessActiveText, color: AppTheme.secondary)
@@ -314,11 +314,12 @@ struct GameScreenView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
 
-            Text(value)
+            Text(formattedStatValue(title: title, value: value))
                 .font(AppTheme.Typography.section())
                 .foregroundStyle(AppTheme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.6)
         }
         .frame(width: metrics.sideColumnWidth)
         .padding(.vertical, metrics.statBadgeVerticalPadding)
@@ -326,6 +327,73 @@ struct GameScreenView: View {
             Color.white.opacity(0.06),
             in: RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
         )
+    }
+
+    private func formattedStatValue(title: String, value: String) -> String {
+        guard title == Strings.Game.wrong, value != Strings.Game.none else {
+            return value
+        }
+
+        let parts = value.split(separator: " ").map(String.init)
+        return stride(from: 0, to: parts.count, by: 3)
+            .map { index in
+                parts[index..<min(index + 3, parts.count)].joined(separator: " ")
+            }
+            .joined(separator: "\n")
+    }
+
+    private func hintBlock(state: GameViewState) -> some View {
+        ZStack {
+            hintContent(state: state, emphasized: hintFlash)
+
+            GeometryReader { proxy in
+                hintContent(state: state, emphasized: true)
+                    .mask(
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.clear,
+                                        Color.white.opacity(0.15),
+                                        Color.white,
+                                        Color.white.opacity(0.15),
+                                        Color.clear
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 120)
+                            .offset(x: hintSweepOffset)
+                    )
+            }
+            .allowsHitTesting(false)
+        }
+        .padding(.horizontal, AppTheme.Spacing.small)
+        .padding(.vertical, AppTheme.Spacing.xSmall)
+        .background(
+            RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+                .fill(AppTheme.secondary.opacity(hintFlash ? 0.14 : 0))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
+                .stroke(AppTheme.secondary.opacity(hintFlash ? 0.55 : 0), lineWidth: 1.5)
+        }
+        .scaleEffect(hintFlash ? 1.02 : 1)
+        .animation(.easeOut(duration: 0.24), value: hintFlash)
+    }
+
+    private func hintContent(state: GameViewState, emphasized: Bool) -> some View {
+        VStack(spacing: AppTheme.Spacing.xxxSmall) {
+            Text(state.hintTitle)
+                .font(AppTheme.Typography.caption())
+                .foregroundStyle(emphasized ? AppTheme.secondary : AppTheme.textMuted)
+            Text(state.hintText)
+                .font(AppTheme.Typography.body())
+                .foregroundStyle(emphasized ? AppTheme.textPrimary : AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier(AccessibilityID.Game.hintText)
+        }
     }
 
     private func compactPowerButton(
@@ -651,6 +719,24 @@ struct GameScreenView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
             withAnimation(.easeOut(duration: 0.22)) {
                 roundRefreshPulse = false
+            }
+        }
+    }
+
+    private func triggerHintFlash() {
+        hintSweepOffset = -220
+
+        withAnimation(.easeOut(duration: 0.28)) {
+            hintFlash = true
+        }
+
+        withAnimation(.easeInOut(duration: 0.95)) {
+            hintSweepOffset = 220
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) {
+            withAnimation(.easeOut(duration: 0.28)) {
+                hintFlash = false
             }
         }
     }

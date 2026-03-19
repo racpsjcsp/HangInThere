@@ -26,8 +26,8 @@ enum Strings {
         static let mediumMode = "mediumMode"
         static let hardMode = "hardMode"
 
-        static let revealPower = "powerUp1"
-        static let freeGuessPower = "powerUp2"
+        static let revealPower = "revealPower"
+        static let freeGuessPower = "freeGuessPower"
 
         static let splashLogo = "hangInThere1"
         static let splashEmblem = "hangInThereEmblem"

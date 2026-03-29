@@ -6,11 +6,11 @@
 //
 
 import Foundation
-import Combine
 import SwiftUI
 
 @MainActor
-final class HangmanGameViewModel: ObservableObject {
+@Observable
+final class HangmanGameViewModel {
     private struct SuspendedRoundKey: Hashable {
         let category: HangmanCategory
         let level: GameLevel
@@ -21,17 +21,32 @@ final class HangmanGameViewModel: ObservableObject {
         let usedPowerUp: Bool
     }
 
-    @Published private(set) var progress = PlayerProgress()
-    @Published private(set) var selectedCategory: HangmanCategory?
-    @Published private(set) var selectedLevel: GameLevel?
-    @Published private(set) var puzzle: HangmanPuzzle?
-    @Published private(set) var dailyQuestState: DailyQuestState
-    @Published private(set) var message = Strings.Message.initial
-    @Published private(set) var lastAwardedXP: Int = 0
-    @Published private(set) var lastLevelsGained: Int = 0
-    @Published private(set) var lastRevealChargesGained: Int = 0
-    @Published private(set) var lastFreeGuessChargesGained: Int = 0
-    @Published private(set) var roundPhase: RoundPhase = .playing
+    private(set) var progress = PlayerProgress()
+    private(set) var selectedCategory: HangmanCategory?
+    private(set) var selectedLevel: GameLevel?
+    private(set) var puzzle: HangmanPuzzle?
+    private(set) var dailyQuestState: DailyQuestState
+    private(set) var message = Strings.Message.initial
+    private(set) var lastAwardedXP: Int = 0
+    private(set) var lastLevelsGained: Int = 0
+    private(set) var lastRevealChargesGained: Int = 0
+    private(set) var lastFreeGuessChargesGained: Int = 0
+    private(set) var roundPhase: RoundPhase = .playing
+    var soundEnabled = false {
+        didSet {
+            guard soundEnabled != oldValue else { return }
+            persistSoundState()
+            if soundEnabled {
+                soundPlayer.play(.soundToggle)
+            }
+        }
+    }
+    var hapticsEnabled = false {
+        didSet {
+            guard hapticsEnabled != oldValue else { return }
+            persistHapticState()
+        }
+    }
 
     private let startRoundUseCase: StartRoundUseCase
     private let progressRepository: any ProgressRepository
@@ -64,7 +79,7 @@ final class HangmanGameViewModel: ObservableObject {
         progressRepository: any ProgressRepository,
         dailyQuestRepository: any DailyQuestRepository = InMemoryDailyQuestRepository(),
         calendar: Calendar = .current,
-        dateProvider: @escaping () -> Date = Date.init,
+        dateProvider: @escaping () -> Date = { .now },
         soundPlayer: (any SoundPlaying)? = nil,
         hapticPlayer: (any HapticPlaying)? = nil
     ) {
@@ -75,6 +90,8 @@ final class HangmanGameViewModel: ObservableObject {
         self.dailyQuestRepository = dailyQuestRepository
         self.soundPlayer = resolvedSoundPlayer
         self.hapticPlayer = resolvedHapticPlayer
+        self.soundEnabled = resolvedSoundPlayer.isSoundEnabled
+        self.hapticsEnabled = resolvedHapticPlayer.isHapticsEnabled
         self.refreshDailyQuestStateUseCase = RefreshDailyQuestStateUseCase(calendar: calendar)
         self.dateProvider = dateProvider
         let loadedProgress = progressRepository.loadProgress()
@@ -157,8 +174,8 @@ final class HangmanGameViewModel: ObservableObject {
         SettingsMenuViewState(
             title: Strings.Settings.title,
             subtitle: Strings.Settings.subtitle,
-            soundEnabled: soundPlayer.isSoundEnabled,
-            hapticsEnabled: hapticPlayer.isHapticsEnabled,
+            soundEnabled: soundEnabled,
+            hapticsEnabled: hapticsEnabled,
             playerLevelText: Strings.Selection.level(progress.level),
             progressText: Strings.DailyQuests.experience(
                 progress.experienceWithinCurrentLevel,
@@ -264,14 +281,6 @@ final class HangmanGameViewModel: ObservableObject {
         selectedLevel
     }
 
-    var isSoundEnabled: Bool {
-        soundPlayer.isSoundEnabled
-    }
-
-    var isHapticsEnabled: Bool {
-        hapticPlayer.isHapticsEnabled
-    }
-
     func hasSuspendedRound(for category: HangmanCategory, level: GameLevel) -> Bool {
         suspendedRounds[.init(category: category, level: level)] != nil
     }
@@ -326,30 +335,11 @@ final class HangmanGameViewModel: ObservableObject {
     }
 
     func toggleSound() {
-        setSoundEnabled(!soundPlayer.isSoundEnabled)
-    }
-
-    func setSoundEnabled(_ isEnabled: Bool) {
-        guard soundPlayer.isSoundEnabled != isEnabled else { return }
-        soundPlayer.isSoundEnabled = isEnabled
-        if isEnabled {
-            soundPlayer.play(.soundToggle)
-        }
-        hapticPlayer.toggle()
-        objectWillChange.send()
+        soundEnabled.toggle()
     }
 
     func toggleHaptics() {
-        setHapticsEnabled(!hapticPlayer.isHapticsEnabled)
-    }
-
-    func setHapticsEnabled(_ isEnabled: Bool) {
-        guard hapticPlayer.isHapticsEnabled != isEnabled else { return }
-        hapticPlayer.isHapticsEnabled = isEnabled
-        if isEnabled {
-            hapticPlayer.toggle()
-        }
-        objectWillChange.send()
+        hapticsEnabled.toggle()
     }
 
     func guess(_ letter: String) {
@@ -576,6 +566,14 @@ final class HangmanGameViewModel: ObservableObject {
             revealCharges: nextReward.revealCharges,
             freeGuessCharges: nextReward.freeGuessCharges
         )
+    }
+
+    private func persistSoundState() {
+        soundPlayer.isSoundEnabled = soundEnabled
+    }
+
+    private func persistHapticState() {
+        hapticPlayer.isHapticsEnabled = hapticsEnabled
     }
 }
 

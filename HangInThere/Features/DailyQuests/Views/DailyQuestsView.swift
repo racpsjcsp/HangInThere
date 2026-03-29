@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DailyQuestsView: View {
-    @ObservedObject var viewModel: HangmanGameViewModel
+    let viewModel: HangmanGameViewModel
     let onClose: () -> Void
 
     var body: some View {

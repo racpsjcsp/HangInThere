@@ -6,14 +6,14 @@
 //
 
 import Foundation
-import Combine
 import SwiftUI
 
 @MainActor
-final class AppViewModel: ObservableObject {
-    @Published private(set) var phase: AppPhase = .splash
-    @Published var isShowingDailyQuests = false
-    @Published var isShowingSettings = false
+@Observable
+final class AppViewModel {
+    private(set) var phase: AppPhase = .splash
+    var isShowingDailyQuests = false
+    var isShowingSettings = false
     let gameViewModel: HangmanGameViewModel
     private let startAppFlowUseCase = StartAppFlowUseCase()
     private let chooseCategoryFlowUseCase = ChooseCategoryFlowUseCase()

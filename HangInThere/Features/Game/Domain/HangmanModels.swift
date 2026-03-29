@@ -367,5 +367,5 @@ final class InMemoryWordRepository: WordRepository {
         return nextWord
     }
 
-    static let `default` = InMemoryWordRepository(wordsByCategoryAndLevel: GameWordBank.wordsByCategoryAndLevel)
+    @MainActor static let `default` = InMemoryWordRepository(wordsByCategoryAndLevel: GameWordBank.wordsByCategoryAndLevel)
 }

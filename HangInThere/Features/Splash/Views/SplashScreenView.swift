@@ -24,6 +24,7 @@ struct SplashScreenView: View {
             .resizable()
             .scaledToFill()
             .ignoresSafeArea()
+            .accessibilityHidden(true)
             .overlay(backgroundOverlay)
     }
 
@@ -57,6 +58,7 @@ struct SplashScreenView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 74, height: 74)
+                .accessibilityHidden(true)
 
             AppPill(text: Strings.Splash.badge, color: AppTheme.secondary)
 
@@ -64,6 +66,7 @@ struct SplashScreenView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(maxWidth: 320)
+                .accessibilityLabel(Strings.Splash.title)
                 .accessibilityIdentifier(AccessibilityID.Splash.title)
 
             Text(Strings.Splash.subtitle)

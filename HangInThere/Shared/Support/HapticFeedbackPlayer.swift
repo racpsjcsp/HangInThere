@@ -5,21 +5,17 @@
 //  Created by Codex on 13/03/26.
 //
 
-import UIKit
+import Foundation
 
 @MainActor
 protocol HapticPlaying: AnyObject {
     var isHapticsEnabled: Bool { get set }
-    func toggle()
 }
 
 @MainActor
 final class HapticFeedbackPlayer: HapticPlaying {
     static let shared = HapticFeedbackPlayer()
     private static let hapticsEnabledKey = "haptics_enabled"
-
-    private let impactGenerator = UIImpactFeedbackGenerator(style: .rigid)
-    private let notificationGenerator = UINotificationFeedbackGenerator()
     private let userDefaults: UserDefaults
 
     var isHapticsEnabled: Bool {
@@ -30,14 +26,6 @@ final class HapticFeedbackPlayer: HapticPlaying {
     private init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
     }
-
-    func toggle() {
-        guard isHapticsEnabled else { return }
-        impactGenerator.prepare()
-        notificationGenerator.prepare()
-        impactGenerator.impactOccurred(intensity: 1)
-        notificationGenerator.notificationOccurred(.success)
-    }
 }
 
 @MainActor
@@ -47,6 +35,4 @@ final class SilentHapticPlayer: HapticPlaying {
     var isHapticsEnabled = false
 
     private init() {}
-
-    func toggle() {}
 }

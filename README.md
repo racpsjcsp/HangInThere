@@ -48,6 +48,7 @@ For the full internal project documentation, see [`PROJECT_OVERVIEW.md`](./PROJE
 
 - Swift
 - SwiftUI
+- Swift 6.2
 - MVVM
 - feature-based folder organization
 - repository pattern
@@ -75,6 +76,12 @@ The app uses a feature-oriented MVVM structure:
   - repositories and persistence
 
 The app is composed from the root in `HangInThereApp.swift`, where repositories are injected into the app flow and gameplay view models.
+
+The current implementation uses SwiftUI's Observation system for app and gameplay state:
+
+- `@Observable` for `AppViewModel` and `HangmanGameViewModel`
+- `@State` for owned observable models
+- `@Bindable` where views need writable bindings into observable state
 
 ## Architecture Diagram
 
@@ -117,10 +124,27 @@ HangInThereApp
 - Unit tests cover app flow, domain logic, and view models.
 - UI tests cover the main playable flow.
 - UI tests run with deterministic data for stability.
+- The project now includes a checked-in shared scheme at `HangInThere.xcodeproj/xcshareddata/xcschemes/HangInThere.xcscheme` so `xcodebuild` can discover the app and test targets consistently.
 - SwiftUI accessibility can expose custom composed views under different element types, so UI tests prefer stable accessibility identifiers and, when needed, `descendants(matching: .any)` instead of assuming `buttons`, `staticTexts`, or `otherElements`.
+- `xcodebuild build-for-testing -quiet -project HangInThere.xcodeproj -scheme HangInThere -destination 'generic/platform=iOS Simulator'` is currently passing under Swift 6.2.
+- Simulator test execution depends on local CoreSimulator health. When CoreSimulator is unavailable, build verification still works but test execution can fail before XCTest starts.
 
 ## Recent Work
 
+- The app and test targets now build with Swift 6.2.
+- App and gameplay state moved from `ObservableObject` / `@Published` to SwiftUI Observation with `@Observable` and `@Bindable`.
+- The project now includes a shared `HangInThere` scheme so `xcodebuild` can discover the scheme consistently.
+- Splash, settings, and gameplay accessibility were tightened up:
+  - splash decorative images are hidden from VoiceOver and the logo has a real accessibility label
+  - the forced light/dark appearance override was removed
+  - settings toggles now use real labels instead of hidden empty-string toggle labels
+  - the gameplay sound button now uses a proper text-backed label and a 44x44 minimum touch target
+- Gameplay now respects Reduce Motion more carefully by degrading shake, sweep, and celebration effects to lighter feedback.
+- UI scheduling in gameplay feedback moved from `DispatchQueue.main.asyncAfter` to Swift concurrency with `Task.sleep(for:)`.
+- Theme typography now uses Dynamic Type-friendly text styles rather than fixed point sizes.
+- UIKit haptic generators were removed in favor of SwiftUI `sensoryFeedback()` at the view layer.
+- The in-memory default word repository singleton is now isolated to `@MainActor` for Swift 6.2 concurrency safety.
+- UI test helpers were updated for Swift 6.2 actor isolation by marking `XCUIApplication` query helpers `@MainActor`.
 - The splash screen was redesigned around custom background, emblem, and logo artwork instead of text-only branding.
 - Category selection now uses illustrated category cards with normalized card heights.
 - Difficulty selection now uses custom badge artwork for `Easy`, `Medium`, and `Hard`.

@@ -20,7 +20,9 @@ struct GameScreenView: View {
         let powerRingSize: CGFloat
     }
 
-    @ObservedObject var viewModel: HangmanGameViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let viewModel: HangmanGameViewModel
     let onGoToCategories: () -> Void
     let onContinueAfterRound: () -> Void
     @State private var correctPulse = false
@@ -32,6 +34,7 @@ struct GameScreenView: View {
     @State private var freeGuessPowerFlash = false
     @State private var hintFlash = false
     @State private var hintSweepOffset: CGFloat = -220
+    @State private var soundFeedbackTrigger = 0
 
     var body: some View {
         if let state = viewModel.gameViewState {
@@ -98,6 +101,11 @@ struct GameScreenView: View {
                     triggerHintFlash()
                 }
             }
+            .onChange(of: viewModel.soundEnabled) { _, _ in
+                guard viewModel.hapticsEnabled else { return }
+                soundFeedbackTrigger += 1
+            }
+            .sensoryFeedback(.selection, trigger: soundFeedbackTrigger)
         }
     }
 
@@ -149,10 +157,14 @@ struct GameScreenView: View {
         Button {
             viewModel.toggleSound()
         } label: {
-            Image(systemName: viewModel.isSoundEnabled ? Strings.Symbol.soundOn : Strings.Symbol.soundOff)
+            Label(
+                viewModel.soundEnabled ? Strings.Game.soundOn : Strings.Game.soundOff,
+                systemImage: viewModel.soundEnabled ? Strings.Symbol.soundOn : Strings.Symbol.soundOff
+            )
+                .labelStyle(.iconOnly)
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(AppTheme.textPrimary)
-                .frame(width: 36, height: 36)
+                .frame(minWidth: 44, minHeight: 44)
                 .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
@@ -160,7 +172,7 @@ struct GameScreenView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(viewModel.isSoundEnabled ? Strings.Game.soundOn : Strings.Game.soundOff)
+        .accessibilityLabel(viewModel.soundEnabled ? Strings.Game.soundOn : Strings.Game.soundOff)
         .accessibilityIdentifier(AccessibilityID.Game.soundToggleButton)
         .fixedSize()
     }
@@ -242,8 +254,8 @@ struct GameScreenView: View {
             soundToggleButton
                 .padding(AppTheme.Spacing.small)
         }
-        .scaleEffect(correctPulse ? 1.02 : (roundRefreshPulse ? 1.015 : 1))
-        .modifier(ShakeEffect(animatableData: shakeTrigger))
+        .scaleEffect(reduceMotion ? 1 : (correctPulse ? 1.02 : (roundRefreshPulse ? 1.015 : 1)))
+        .modifier(ShakeEffect(animatableData: reduceMotion ? 0 : shakeTrigger))
         .overlay {
             RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous)
                 .stroke(
@@ -346,28 +358,30 @@ struct GameScreenView: View {
         ZStack {
             hintContent(state: state, emphasized: hintFlash)
 
-            GeometryReader { proxy in
-                hintContent(state: state, emphasized: true)
-                    .mask(
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.clear,
-                                        Color.white.opacity(0.15),
-                                        Color.white,
-                                        Color.white.opacity(0.15),
-                                        Color.clear
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+            if !reduceMotion {
+                GeometryReader { _ in
+                    hintContent(state: state, emphasized: true)
+                        .mask(
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.clear,
+                                            Color.white.opacity(0.15),
+                                            Color.white,
+                                            Color.white.opacity(0.15),
+                                            Color.clear
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .frame(width: 120)
-                            .offset(x: hintSweepOffset)
-                    )
+                                .frame(width: 120)
+                                .offset(x: hintSweepOffset)
+                        )
+                }
+                .allowsHitTesting(false)
             }
-            .allowsHitTesting(false)
         }
         .padding(.horizontal, AppTheme.Spacing.small)
         .padding(.vertical, AppTheme.Spacing.xSmall)
@@ -379,7 +393,7 @@ struct GameScreenView: View {
             RoundedRectangle(cornerRadius: AppTheme.Radius.small, style: .continuous)
                 .stroke(AppTheme.secondary.opacity(hintFlash ? 0.55 : 0), lineWidth: 1.5)
         }
-        .scaleEffect(hintFlash ? 1.02 : 1)
+        .scaleEffect(reduceMotion ? 1 : (hintFlash ? 1.02 : 1))
         .animation(.easeOut(duration: 0.24), value: hintFlash)
     }
 
@@ -443,7 +457,7 @@ struct GameScreenView: View {
             }
         }
         .buttonStyle(.plain)
-        .animation(.easeOut(duration: 0.22), value: isFlashing)
+        .animation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.22), value: isFlashing)
         .accessibilityIdentifier(accessibilityIdentifier)
     }
 
@@ -492,12 +506,12 @@ struct GameScreenView: View {
         switch power {
         case .revealLetter:
             revealPowerFlash = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            schedule(after: .milliseconds(340)) {
                 revealPowerFlash = false
             }
         case .freeGuess:
             freeGuessPowerFlash = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.34) {
+            schedule(after: .milliseconds(340)) {
                 freeGuessPowerFlash = false
             }
         }
@@ -509,7 +523,7 @@ struct GameScreenView: View {
                 let columnCount = 10
                 let keySpacing = AppTheme.Spacing.xxxSmall
                 let rowSpacing = AppTheme.Spacing.small
-                let keyHeight: CGFloat = 42
+                let keyHeight: CGFloat = 44
                 let totalSpacing = CGFloat(columnCount - 1) * keySpacing
                 let keyWidth = (proxy.size.width - totalSpacing) / CGFloat(columnCount)
 
@@ -543,7 +557,7 @@ struct GameScreenView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .frame(height: 142)
+            .frame(minHeight: 150)
         }
     }
 
@@ -560,7 +574,7 @@ struct GameScreenView: View {
                         .foregroundStyle(summary.tint)
                 }
                 .padding(.top, AppTheme.Spacing.xxSmall)
-                .scaleEffect(showWinCelebration && summary.isWin ? 1.14 : 1)
+                .scaleEffect(reduceMotion ? 1 : (showWinCelebration && summary.isWin ? 1.14 : 1))
                 .animation(AppTheme.Motion.celebration, value: showWinCelebration)
 
                 VStack(spacing: AppTheme.Spacing.xxSmall) {
@@ -568,7 +582,7 @@ struct GameScreenView: View {
                         .font(AppTheme.Typography.title())
                         .foregroundStyle(summary.tint)
                         .accessibilityIdentifier(AccessibilityID.Game.summaryTitle)
-                        .scaleEffect(showWinCelebration && summary.isWin ? 1.08 : 1)
+                        .scaleEffect(reduceMotion ? 1 : (showWinCelebration && summary.isWin ? 1.08 : 1))
                         .animation(AppTheme.Motion.celebration, value: showWinCelebration)
 
                     Text(summary.subtitle)
@@ -629,7 +643,7 @@ struct GameScreenView: View {
         .background(summary.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: AppTheme.Radius.medium, style: .continuous))
         .overlay(alignment: .top) {
             if summary.isWin {
-                WinCelebrationView(isActive: showWinCelebration)
+                WinCelebrationView(isActive: showWinCelebration && !reduceMotion)
                     .allowsHitTesting(false)
             }
         }
@@ -684,27 +698,31 @@ struct GameScreenView: View {
     }
 
     private func triggerCorrectFeedback() {
-        withAnimation(AppTheme.Motion.feedbackPulse) {
+        let animation = reduceMotion ? .easeOut(duration: 0.18) : AppTheme.Motion.feedbackPulse
+
+        withAnimation(animation) {
             correctPulse = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
-            withAnimation(AppTheme.Motion.feedbackPulse) {
+        schedule(after: .milliseconds(280)) {
+            withAnimation(animation) {
                 correctPulse = false
             }
         }
     }
 
     private func triggerWrongFeedback() {
-        withAnimation(AppTheme.Motion.shake) {
-            shakeTrigger += 1
+        if !reduceMotion {
+            withAnimation(AppTheme.Motion.shake) {
+                shakeTrigger += 1
+            }
         }
 
         withAnimation(.easeOut(duration: 0.18)) {
             wrongFlash = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+        schedule(after: .milliseconds(280)) {
             withAnimation(.easeOut(duration: 0.18)) {
                 wrongFlash = false
             }
@@ -712,12 +730,12 @@ struct GameScreenView: View {
     }
 
     private func triggerRoundRefreshFeedback() {
-        withAnimation(.easeOut(duration: 0.22)) {
+        withAnimation(.easeOut(duration: reduceMotion ? 0.16 : 0.22)) {
             roundRefreshPulse = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
-            withAnimation(.easeOut(duration: 0.22)) {
+        schedule(after: .milliseconds(300)) {
+            withAnimation(.easeOut(duration: reduceMotion ? 0.16 : 0.22)) {
                 roundRefreshPulse = false
             }
         }
@@ -730,11 +748,13 @@ struct GameScreenView: View {
             hintFlash = true
         }
 
-        withAnimation(.easeInOut(duration: 0.95)) {
-            hintSweepOffset = 220
+        if !reduceMotion {
+            withAnimation(.easeInOut(duration: 0.95)) {
+                hintSweepOffset = 220
+            }
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.15) {
+        schedule(after: .milliseconds(reduceMotion ? 300 : 1150)) {
             withAnimation(.easeOut(duration: 0.28)) {
                 hintFlash = false
             }
@@ -752,8 +772,13 @@ struct GameScreenView: View {
             return
         }
 
+        if reduceMotion {
+            showWinCelebration = true
+            return
+        }
+
         showWinCelebration = false
-        DispatchQueue.main.async {
+        schedule(after: .zero) {
             withAnimation(AppTheme.Motion.celebration) {
                 showWinCelebration = true
             }
@@ -765,6 +790,14 @@ struct GameScreenView: View {
             if character != Character(Strings.Game.maskedLetter) && character != Character(Strings.Game.blankCharacter) {
                 count += 1
             }
+        }
+    }
+
+    private func schedule(after delay: Duration, action: @escaping @MainActor () -> Void) {
+        Task { @MainActor in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            action()
         }
     }
 }

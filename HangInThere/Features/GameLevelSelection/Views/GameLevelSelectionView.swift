@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct GameLevelSelectionView: View {
-    @ObservedObject var viewModel: HangmanGameViewModel
+    let viewModel: HangmanGameViewModel
     let onChooseLevel: (GameLevel) -> Void
     let onGoBack: () -> Void
 

@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @ObservedObject var viewModel: HangmanGameViewModel
+    @Bindable var viewModel: HangmanGameViewModel
     let onClose: () -> Void
+    @State private var feedbackTrigger = 0
 
     var body: some View {
         let state = viewModel.settingsMenuViewState
@@ -19,7 +20,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.large) {
                     header(state: state)
                     progressCard(state: state)
-                    togglesCard(state: state)
+                    togglesCard
                     storageCard(state: state)
                 }
                 .padding(AppTheme.Spacing.large)
@@ -34,6 +35,15 @@ struct SettingsView: View {
                 }
             }
             .accessibilityIdentifier(AccessibilityID.Settings.title)
+        }
+        .sensoryFeedback(.selection, trigger: feedbackTrigger)
+        .onChange(of: viewModel.soundEnabled) { _, _ in
+            guard viewModel.hapticsEnabled else { return }
+            feedbackTrigger += 1
+        }
+        .onChange(of: viewModel.hapticsEnabled) { _, newValue in
+            guard newValue else { return }
+            feedbackTrigger += 1
         }
     }
 
@@ -67,31 +77,29 @@ struct SettingsView: View {
         }
     }
 
-    private func togglesCard(state: SettingsMenuViewState) -> some View {
+    private var togglesCard: some View {
         AppCard {
             VStack(spacing: AppTheme.Spacing.medium) {
-                toggleRow(
-                    title: Strings.Settings.soundEffects,
-                    systemImage: Strings.Symbol.settingsSound,
-                    binding: Binding(
-                        get: { state.soundEnabled },
-                        set: viewModel.setSoundEnabled
-                    ),
-                    accessibilityIdentifier: AccessibilityID.Settings.soundToggle,
-                )
+                Toggle(isOn: $viewModel.soundEnabled) {
+                    toggleRowLabel(
+                        title: Strings.Settings.soundEffects,
+                        systemImage: Strings.Symbol.settingsSound
+                    )
+                }
+                .tint(AppTheme.secondary)
+                .accessibilityIdentifier(AccessibilityID.Settings.soundToggle)
 
                 Divider()
                     .overlay(AppTheme.panelBorder)
 
-                toggleRow(
-                    title: Strings.Settings.haptics,
-                    systemImage: Strings.Symbol.settingsHaptics,
-                    binding: Binding(
-                        get: { state.hapticsEnabled },
-                        set: viewModel.setHapticsEnabled
-                    ),
-                    accessibilityIdentifier: AccessibilityID.Settings.hapticsToggle,
-                )
+                Toggle(isOn: $viewModel.hapticsEnabled) {
+                    toggleRowLabel(
+                        title: Strings.Settings.haptics,
+                        systemImage: Strings.Symbol.settingsHaptics
+                    )
+                }
+                .tint(AppTheme.secondary)
+                .accessibilityIdentifier(AccessibilityID.Settings.hapticsToggle)
             }
         }
     }
@@ -104,11 +112,9 @@ struct SettingsView: View {
         }
     }
 
-    private func toggleRow(
+    private func toggleRowLabel(
         title: String,
-        systemImage: String,
-        binding: Binding<Bool>,
-        accessibilityIdentifier: String,
+        systemImage: String
     ) -> some View {
         HStack(spacing: AppTheme.Spacing.small) {
             Image(systemName: systemImage)
@@ -120,11 +126,6 @@ struct SettingsView: View {
                 .foregroundStyle(AppTheme.textPrimary)
 
             Spacer()
-
-            Toggle("", isOn: binding)
-            .labelsHidden()
-            .tint(AppTheme.secondary)
-            .accessibilityIdentifier(accessibilityIdentifier)
         }
     }
 }

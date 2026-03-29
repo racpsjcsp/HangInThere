@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CategorySelectionView: View {
-    @ObservedObject var viewModel: HangmanGameViewModel
+    let viewModel: HangmanGameViewModel
     let onChooseCategory: (HangmanCategory) -> Void
     let onOpenDailyQuests: () -> Void
     let onOpenSettings: () -> Void

@@ -50,12 +50,12 @@ enum AppTheme {
     }
 
     enum Typography {
-        static func hero() -> Font { .system(size: 38, weight: .black, design: .rounded) }
-        static func title() -> Font { .system(size: 28, weight: .bold, design: .rounded) }
-        static func section() -> Font { .system(size: 20, weight: .bold, design: .rounded) }
-        static func body() -> Font { .system(size: 16, weight: .medium, design: .rounded) }
-        static func caption() -> Font { .system(size: 13, weight: .semibold, design: .rounded) }
-        static func letter() -> Font { .system(size: 24, weight: .heavy, design: .rounded) }
+        static func hero() -> Font { .system(.largeTitle, design: .rounded, weight: .black) }
+        static func title() -> Font { .system(.title2, design: .rounded, weight: .bold) }
+        static func section() -> Font { .system(.title3, design: .rounded, weight: .bold) }
+        static func body() -> Font { .system(.body, design: .rounded, weight: .medium) }
+        static func caption() -> Font { .system(.caption, design: .rounded, weight: .semibold) }
+        static func letter() -> Font { .system(.title3, design: .rounded, weight: .heavy) }
     }
 
     enum Shadow {

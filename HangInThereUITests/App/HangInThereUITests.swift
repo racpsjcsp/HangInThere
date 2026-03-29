@@ -9,6 +9,7 @@ import XCTest
 
 final class HangInThereUITests: XCTestCase {
 
+    @MainActor
     private func anyElement(_ app: XCUIApplication, id: String) -> XCUIElement {
         app.descendants(matching: .any)[id]
     }

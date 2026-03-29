@@ -134,6 +134,7 @@ The project follows a feature-oriented MVVM structure with additional domain and
 - use case / application service pattern
 - composition root / dependency injection
 - view state mapping
+- SwiftUI Observation for mutable app and gameplay state
 
 ## Folder Structure
 
@@ -197,6 +198,7 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
 - `AppViewModel`
   - owns app navigation state
   - coordinates transitions between splash, category selection, level selection, and game
+  - implemented with `@Observable`
 - `AppFlowUseCases`
   - encapsulate navigation decisions
 
@@ -252,6 +254,7 @@ This flow is coordinated by `AppViewModel` and app-flow use cases.
   - gameplay view model
   - owns progress, selected category, selected level, round state, daily quests, settings state, and feedback message
   - exposes view state objects for screens
+  - implemented with `@Observable`
 - `ViewStates.swift`
   - presentation-specific state models for rendering
 
@@ -298,15 +301,29 @@ The app uses shared design-system components and theme values:
 
 This keeps the UI style more consistent and avoids repeated layout and styling code.
 
+Recent platform-facing updates:
+
+- project and test targets now use Swift 6.2
+- app/game state uses Observation instead of `ObservableObject`
+- a shared `HangInThere` scheme is checked in for `xcodebuild`
+- gameplay feedback timers use `Task.sleep(for:)` instead of `DispatchQueue.main.asyncAfter`
+
 ## Feedback and Reward Layer
 
 The app now gives stronger round and progression feedback through:
 
 - bundled sound effects for guesses, powers, wins/losses, level-up, sound toggle, and quest reward claim
-- haptic feedback for the sound toggle
+- SwiftUI `sensoryFeedback()` for settings and gameplay toggle feedback
 - explicit level-up summary feedback after a win
 - explicit power reward summary feedback when milestone levels grant charges
 - quest-screen progress display showing current level and XP toward the next level
+
+Accessibility and interaction refinements now include:
+
+- Dynamic Type-friendly typography in `AppTheme`
+- VoiceOver-safe labeling for splash branding and settings toggles
+- 44x44 minimum hit target for the gameplay sound toggle and keyboard keys
+- Reduce Motion-aware gameplay feedback and celebration behavior
 
 ## Recent Visual Refresh
 

@@ -9,7 +9,7 @@ import SwiftUI
 
 @MainActor
 struct MainView: View {
-    @StateObject private var viewModel: AppViewModel
+    @State private var viewModel: AppViewModel
 
     init(
         wordRepository: any WordRepository = InMemoryWordRepository.default,
@@ -20,8 +20,8 @@ struct MainView: View {
     ) {
         let resolvedSoundPlayer = soundPlayer ?? SoundEffectPlayer.shared
         let resolvedHapticPlayer = hapticPlayer ?? HapticFeedbackPlayer.shared
-        _viewModel = StateObject(
-            wrappedValue: AppViewModel(
+        _viewModel = State(
+            initialValue: AppViewModel(
                 wordRepository: wordRepository,
                 progressRepository: progressRepository,
                 dailyQuestRepository: dailyQuestRepository,
@@ -32,6 +32,8 @@ struct MainView: View {
     }
 
     var body: some View {
+        @Bindable var bindableViewModel = viewModel
+
         GeometryReader { proxy in
             ZStack(alignment: .top) {
                 AppTheme.background.ignoresSafeArea()
@@ -47,11 +49,10 @@ struct MainView: View {
             }
         }
         .animation(AppTheme.Motion.screenTransition, value: viewModel.phase)
-        .preferredColorScheme(viewModel.phase == .splash ? .light : .dark)
-        .sheet(isPresented: $viewModel.isShowingDailyQuests) {
+        .sheet(isPresented: $bindableViewModel.isShowingDailyQuests) {
             DailyQuestsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeDailyQuests)
         }
-        .sheet(isPresented: $viewModel.isShowingSettings) {
+        .sheet(isPresented: $bindableViewModel.isShowingSettings) {
             SettingsView(viewModel: viewModel.gameViewModel, onClose: viewModel.closeSettings)
         }
     }
